@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Dashboard — HelpdeskOS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;1,9..40,400&display=swap" rel="stylesheet" />
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="css/styles.css" />
+</head>
+<body data-page="dashboard" data-root="./">
+<div class="main-wrap">
+  <header id="topbar"></header>
+  <main class="page-main">
+
+    <!-- Hero -->
+    <div style="background:linear-gradient(135deg,#1e3a8a,#1d4ed8,#2563eb);border-radius:22px;padding:clamp(16px,4vw,32px);position:relative;overflow:hidden;margin-bottom:22px;" class="anim-slide-up">
+      <div style="position:absolute;inset:0;background-image:radial-gradient(circle,rgba(255,255,255,.06) 1px,transparent 1px);background-size:22px 22px;pointer-events:none;"></div>
+      <div style="position:absolute;top:-40px;right:-40px;width:240px;height:240px;background:radial-gradient(circle,rgba(99,102,241,.25),transparent 70%);pointer-events:none;"></div>
+      <div style="position:relative;z-index:1;">
+        <div id="heroGreeting" style="font-size:13px;color:rgba(255,255,255,.7);margin-bottom:5px;"></div>
+        <h1 style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:24px;color:#fff;line-height:1.25;margin-bottom:5px;">Comment puis-je vous aider ?</h1>
+        <p style="font-size:13.5px;color:rgba(255,255,255,.65);margin-bottom:20px;">Recherchez vos tickets, soumettez une demande ou consultez l'IA.</p>
+        <!-- Search -->
+        <div style="position:relative;max-width:540px;">
+          <div style="display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.22);border-radius:13px;padding:10px 16px;backdrop-filter:blur(8px);" onclick="document.getElementById('heroSearch').focus()">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            <input id="heroSearch" placeholder="Rechercher dans vos tickets…" style="flex:1;background:transparent;border:none;outline:none;font-family:'DM Sans',sans-serif;font-size:13.5px;color:#fff;" />
+          </div>
+          <div id="heroSearchDrop" style="display:none;position:absolute;top:calc(100%+6px);left:0;right:0;background:#fff;border:1.5px solid #e8effd;border-radius:14px;box-shadow:0 16px 40px -8px rgba(0,0,0,.18);z-index:50;overflow:hidden;max-height:300px;overflow-y:auto;"></div>
+        </div>
+        <!-- Quick actions -->
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:18px;">
+          <a href="new-ticket.html" style="display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.22);padding:7px 14px;border-radius:99px;font-size:13px;font-weight:600;color:#fff;text-decoration:none;transition:all .15s;" onmouseover="this.style.background='rgba(255,255,255,.22)'" onmouseout="this.style.background='rgba(255,255,255,.12)'">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>Nouveau Ticket
+          </a>
+          <a href="chatbot.html" style="display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.22);padding:7px 14px;border-radius:99px;font-size:13px;font-weight:600;color:#fff;text-decoration:none;transition:all .15s;" onmouseover="this.style.background='rgba(255,255,255,.22)'" onmouseout="this.style.background='rgba(255,255,255,.12)'">
+            🤖 AI Chatbot
+          </a>
+          <a href="tickets.html" style="display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.22);padding:7px 14px;border-radius:99px;font-size:13px;font-weight:600;color:#fff;text-decoration:none;transition:all .15s;" onmouseover="this.style.background='rgba(255,255,255,.22)'" onmouseout="this.style.background='rgba(255,255,255,.12)'">
+            🎫 Mes Tickets
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:18px;" id="statsRow"></div>
+
+    <!-- Content grid -->
+    <div style="display:grid;grid-template-columns:2fr 1fr;gap:18px;" id="contentGrid">
+
+      <!-- My Tickets -->
+      <div class="card anim-slide-up" style="padding:22px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+          <div>
+            <div style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:16px;color:#0f172a;">Mes Tickets Récents</div>
+            <div style="font-size:12px;color:#94a3b8;margin-top:1px;">Vos demandes de support actives</div>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <a href="new-ticket.html" class="btn btn-primary btn-sm" style="text-decoration:none;">+ Nouveau</a>
+            <a href="tickets.html" class="btn btn-ghost btn-sm" style="text-decoration:none;">Voir tout →</a>
+          </div>
+        </div>
+        <div id="ticketsTable"></div>
+      </div>
+
+      <!-- AI Chatbot CTA -->
+      <div style="display:flex;flex-direction:column;gap:14px;">
+        <div style="background:linear-gradient(135deg,#4f46e5,#7c3aed);border-radius:20px;padding:22px;color:#fff;" class="anim-slide-up delay-1">
+          <div style="width:46px;height:46px;border-radius:14px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:12px;">🤖</div>
+          <div style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:15px;margin-bottom:6px;">AI Chatbot</div>
+          <p style="font-size:13px;color:rgba(255,255,255,.75);margin-bottom:14px;line-height:1.5;">Obtenez des réponses instantanées à vos questions IT grâce à l'intelligence artificielle.</p>
+          <a href="chatbot.html" class="btn" style="background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.3);color:#fff;font-size:13px;text-decoration:none;width:100%;justify-content:center;">Démarrer une conversation →</a>
+        </div>
+
+        <!-- Quick stats -->
+        <div class="card anim-slide-up delay-2" style="padding:18px;">
+          <div style="font-size:12px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;">Résumé</div>
+          <div id="quickStats" style="display:flex;flex-direction:column;gap:10px;"></div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<script src="js/app.js"></script>
+<script src="js/nav.js"></script>
+<script>
+const session = HDOS.requireAccess('dashboard');
+if (session) {
+  const hour = new Date().getHours();
+  const greet = hour<12?'Bonjour':hour<17?'Bon après-midi':'Bonsoir';
+  document.getElementById('heroGreeting').textContent = `${greet}, ${session.name.split(' ')[0]} 👋`;
+
+  // use getVisibleTickets — respects access
+  const tickets = HDOS.getVisibleTickets(); // was: HDOS.getTickets().filter(t => session.role==='admin'||session.role==='superadmin' ? true : t.userId===session.id);
+  const open    = tickets.filter(t=>['open','in_progress','under_review','awaiting'].includes(t.status)).length;
+
+  document.getElementById('statsRow').innerHTML = [
+    {icon:'🎫',label:'Tickets Ouverts', value:open,                                        color:'#2563eb',bg:'#eff6ff'},
+    {icon:'✅',label:'Résolus',         value:tickets.filter(t=>t.status==='resolved').length, color:'#059669',bg:'#ecfdf5'},
+    {icon:'🔄',label:'En Cours',        value:tickets.filter(t=>t.status==='in_progress').length,color:'#d97706',bg:'#fffbeb'},
+    {icon:'📊',label:'Total',           value:tickets.length,                              color:'#475569',bg:'#f8fafc'},
+  ].map(s=>`<div class="card stat-card anim-slide-up">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div style="width:42px;height:42px;border-radius:13px;background:${s.bg};display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">${s.icon}</div>
+      <div><div class="stat-value" style="color:${s.color};">${s.value}</div><div class="stat-label">${s.label}</div></div>
+    </div>
+  </div>`).join('');
+
+  // Tickets table
+  const myT = tickets.slice(0,5);
+  document.getElementById('ticketsTable').innerHTML = myT.length
+    ? `<div style="overflow-x:auto;"><table class="data-table">
+        <thead><tr><th>#</th><th>Sujet</th><th>Catégorie</th><th>Priorité</th><th>Statut</th><th>Mis à jour</th></tr></thead>
+        <tbody>${myT.map(t=>`<tr onclick="location.href='ticket-detail.html?id=${t.id}'">
+          <td><span style="font-family:monospace;font-size:12px;color:#64748b;background:#f8fafc;padding:2px 6px;border-radius:5px;">#${t.id}</span></td>
+          <td style="max-width:180px;"><div style="font-weight:500;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${t.subject}</div></td>
+          <td><span style="font-size:12px;background:#f1f5f9;color:#64748b;padding:2px 8px;border-radius:99px;">${t.category}</span></td>
+          <td><div style="display:flex;align-items:center;gap:5px;"><span class="priority-dot priority-${t.priority}"></span><span style="font-size:12.5px;text-transform:capitalize;color:#475569;">${t.priority}</span></div></td>
+          <td>${HDOS.statusBadge(t.status)}</td>
+          <td style="font-size:12px;color:#94a3b8;white-space:nowrap;">${HDOS.timeAgo(t.updated)}</td>
+        </tr>`).join('')}</tbody>
+      </table></div>`
+    : `<div style="text-align:center;padding:28px;"><div style="font-size:32px;margin-bottom:8px;">🎉</div><div style="font-weight:600;color:#0f172a;margin-bottom:4px;">Aucun ticket ouvert</div><div style="font-size:13px;color:#94a3b8;margin-bottom:14px;">Tout va bien ! Soumettez une demande si besoin.</div><a href="new-ticket.html" class="btn btn-primary btn-sm" style="text-decoration:none;">Soumettre un Ticket</a></div>`;
+
+  // Quick stats
+  document.getElementById('quickStats').innerHTML = [
+    {label:'Taux de résolution', value: tickets.length ? Math.round(tickets.filter(t=>t.status==='resolved').length/tickets.length*100)+'%' : '—', color:'#059669'},
+    {label:'Tickets critiques',  value: tickets.filter(t=>t.priority==='critical'&&t.status!=='resolved').length, color:'#dc2626'},
+    {label:'En attente assign.', value: tickets.filter(t=>!t.assignee||t.assignee==='Unassigned').length, color:'#f59e0b'},
+  ].map(s=>`<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+    <span style="font-size:13px;color:#64748b;">${s.label}</span>
+    <span style="font-weight:700;font-size:14px;color:${s.color};">${s.value}</span>
+  </div>`).join('');
+}
+
+HDOS.setupSearchInput('heroSearch','heroSearchDrop', r => { location.href='ticket-detail.html?id='+r.id; });
+
+function adjustGrid() {
+  const g = document.getElementById('contentGrid');
+  if (g) g.style.gridTemplateColumns = window.innerWidth < 700 ? '1fr' : window.innerWidth < 1100 ? '1fr' : '2fr 1fr';
+}
+adjustGrid(); window.addEventListener('resize', adjustGrid);
+</script>
+</body>
+</html>

@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>My Tickets — HelpdeskOS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;1,9..40,400&display=swap" rel="stylesheet" />
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="css/styles.css" />
+</head>
+<body data-page="tickets" data-root="./" data-title="My Tickets" data-subtitle="Track and manage all your support requests">
+
+<div class="main-wrap">
+  <header id="topbar"></header>
+  <main class="page-main">
+
+    <!-- Header row -->
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:20px;flex-wrap:wrap;">
+      <div style="display:flex;gap:10px;flex-wrap:wrap;" id="statsStrip"></div>
+      <a href="new-ticket.html" class="btn btn-primary">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+        New Ticket
+      </a>
+    </div>
+
+    <!-- Filters card -->
+    <div class="card" style="padding:16px 20px;margin-bottom:16px;">
+      <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;">
+
+        <!-- Status tabs -->
+        <div class="tab-pills" style="flex:1;min-width:280px;overflow-x:auto;">
+          <button class="tab-pill active" data-status="all" onclick="setStatus('all',this)">All</button>
+          <button class="tab-pill" data-status="open" onclick="setStatus('open',this)">🔵 Open</button>
+          <button class="tab-pill" data-status="in_progress" onclick="setStatus('in_progress',this)">⏳ In Progress</button>
+          <button class="tab-pill" data-status="under_review" onclick="setStatus('under_review',this)">🔍 Under Review</button>
+          <button class="tab-pill" data-status="resolved" onclick="setStatus('resolved',this)">✓ Resolved</button>
+          <button class="tab-pill" data-status="closed" onclick="setStatus('closed',this)">✗ Closed</button>
+        </div>
+
+        <!-- Category filter -->
+        <select id="catFilter" class="form-select" style="width:auto;padding:7px 30px 7px 10px;font-size:13px;border-radius:10px;" onchange="renderTickets()">
+          <option value="">All Categories</option>
+          <option>Email</option><option>Network</option><option>Hardware</option>
+          <option>Software</option><option>Security</option><option>Access</option><option>General</option>
+        </select>
+
+        <!-- Priority filter -->
+        <select id="priFilter" class="form-select" style="width:auto;padding:7px 30px 7px 10px;font-size:13px;border-radius:10px;" onchange="renderTickets()">
+          <option value="">All Priorities</option>
+          <option>low</option><option>normal</option><option>high</option><option>critical</option>
+        </select>
+
+        <!-- Search -->
+        <div style="flex:1;min-width:180px;display:flex;align-items:center;gap:8px;background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:10px;padding:7px 12px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <input id="ticketSearch" placeholder="Search tickets…" style="flex:1;border:none;background:transparent;font-family:'DM Sans',sans-serif;font-size:13px;outline:none;color:#0f172a;" oninput="renderTickets()" />
+        </div>
+
+        <!-- Sort -->
+        <select id="sortSelect" class="form-select" style="width:auto;padding:7px 30px 7px 10px;font-size:13px;border-radius:10px;" onchange="renderTickets()">
+          <option value="updated">Last Updated</option>
+          <option value="created">Date Created</option>
+          <option value="priority">Priority</option>
+          <option value="id">Ticket ID</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Tickets table -->
+    <div class="card" style="overflow:hidden;">
+      <div style="overflow-x:auto;">
+        <table class="data-table" id="ticketsTable">
+          <thead><tr>
+            <th style="width:70px;"># ID</th>
+            <th>Subject</th>
+            <th class="hide-sm">Category</th>
+            <th class="hide-sm">Priority</th>
+            <th>Status</th>
+            <th class="hide-md">Assignee</th>
+            <th class="hide-sm">Updated</th>
+            <th style="width:36px;"></th>
+          </tr></thead>
+          <tbody id="ticketBody"></tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <div style="padding:14px 20px;border-top:1px solid #f1f5f9;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+        <div id="paginationInfo" style="font-size:13px;color:#64748b;"></div>
+        <div style="display:flex;gap:6px;" id="paginationBtns"></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script src="js/app.js"></script>
+<script src="js/nav.js"></script>
+<script>
+HDOS.requireAccess('tickets');
+const session = HDOS.getSession();
+
+let activeStatus = 'all';
+let page = 1;
+const PER_PAGE = 10;
+
+function setStatus(status, btn) {
+  activeStatus = status;
+  document.querySelectorAll('.tab-pill').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  page = 1;
+  renderTickets();
+}
+
+function getFiltered() {
+  const q   = document.getElementById('ticketSearch').value.toLowerCase();
+  const cat = document.getElementById('catFilter').value;
+  const pri = document.getElementById('priFilter').value;
+  const sort = document.getElementById('sortSelect').value;
+  const priOrder = { critical:0, high:1, normal:2, low:3 };
+
+  let tickets = HDOS.getVisibleTickets();
+  
+  if (activeStatus !== 'all') tickets = tickets.filter(t => t.status === activeStatus);
+  if (cat) tickets = tickets.filter(t => t.category === cat);
+  if (pri) tickets = tickets.filter(t => t.priority === pri);
+  if (q)   tickets = tickets.filter(t => t.subject.toLowerCase().includes(q) || String(t.id).includes(q));
+
+  if (sort === 'updated')  tickets.sort((a,b) => new Date(b.updated) - new Date(a.updated));
+  else if (sort === 'created') tickets.sort((a,b) => new Date(b.created) - new Date(a.created));
+  else if (sort === 'priority') tickets.sort((a,b) => (priOrder[a.priority]||99) - (priOrder[b.priority]||99));
+  else tickets.sort((a,b) => b.id - a.id);
+  return tickets;
+}
+
+function renderTickets() {
+  const tickets = getFiltered();
+  const total   = tickets.length;
+  const start   = (page-1) * PER_PAGE;
+  const slice   = tickets.slice(start, start + PER_PAGE);
+  const totalPages = Math.ceil(total / PER_PAGE);
+
+  // Stats
+  const all = HDOS.getVisibleTickets();
+  document.getElementById('statsStrip').innerHTML = [
+    { label:'Open',     value: all.filter(t=>['open','in_progress','under_review','awaiting'].includes(t.status)).length, color:'#2563eb', bg:'#eff6ff' },
+    { label:'Resolved', value: all.filter(t=>t.status==='resolved').length, color:'#059669', bg:'#ecfdf5' },
+    { label:'Total',    value: all.length, color:'#475569', bg:'#f1f5f9' },
+  ].map(s => `<div style="display:flex;align-items:center;gap:8px;padding:8px 14px;background:${s.bg};border-radius:12px;">
+    <span style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:20px;color:${s.color};">${s.value}</span>
+    <span style="font-size:12px;color:${s.color};font-weight:500;">${s.label}</span>
+  </div>`).join('');
+
+  // Table
+  document.getElementById('ticketBody').innerHTML = slice.map(t => `
+    <tr onclick="location.href='ticket-detail.html?id=${t.id}'">
+      <td><span style="font-family:monospace;font-size:12px;color:#64748b;background:#f8fafc;padding:2px 6px;border-radius:6px;">#${t.id}</span></td>
+      <td>
+        <div style="font-weight:500;font-size:13.5px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${t.subject}</div>
+        <div style="font-size:11.5px;color:#94a3b8;margin-top:2px;">${HDOS.formatDate(t.created)}</div>
+      </td>
+      <td class="hide-sm"><span style="font-size:12px;background:#f1f5f9;color:#64748b;padding:3px 8px;border-radius:99px;">${t.category}</span></td>
+      <td class="hide-sm">
+        <div style="display:flex;align-items:center;gap:5px;">
+          <span class="priority-dot priority-${t.priority}"></span>
+          <span style="font-size:12.5px;color:#475569;text-transform:capitalize;">${t.priority}</span>
+        </div>
+      </td>
+      <td>${HDOS.statusBadge(t.status)}</td>
+      <td class="hide-md" style="font-size:13px;color:#475569;">${t.assignee||'—'}</td>
+      <td class="hide-sm" style="font-size:12px;color:#94a3b8;white-space:nowrap;">${HDOS.timeAgo(t.updated)}</td>
+      <td><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg></td>
+    </tr>`).join('') || `<tr><td colspan="8" style="text-align:center;padding:40px;color:#94a3b8;">
+      <div style="font-size:36px;margin-bottom:10px;">📋</div>
+      <div style="font-size:14px;font-weight:600;color:#475569;margin-bottom:6px;">No tickets found</div>
+      <div style="font-size:13px;">Try adjusting your filters, or <a href="new-ticket.html" style="color:#2563eb;font-weight:600;">submit a new ticket</a>.</div>
+    </td></tr>`;
+
+  // Pagination info
+  document.getElementById('paginationInfo').textContent = total ? `Showing ${start+1}–${Math.min(start+PER_PAGE,total)} of ${total} tickets` : '';
+
+  // Pagination buttons
+  const btns = [];
+  if (page > 1) btns.push(`<button onclick="goPage(${page-1})" class="btn btn-secondary btn-sm">← Prev</button>`);
+  for (let p = 1; p <= totalPages; p++) {
+    btns.push(`<button onclick="goPage(${p})" class="btn btn-sm" style="${p===page?'background:#2563eb;color:#fff;':'background:#f8fafc;color:#475569;border:1.5px solid #e2e8f0;'}">${p}</button>`);
+  }
+  if (page < totalPages) btns.push(`<button onclick="goPage(${page+1})" class="btn btn-secondary btn-sm">Next →</button>`);
+  document.getElementById('paginationBtns').innerHTML = btns.join('');
+}
+
+function goPage(p) { page = p; renderTickets(); window.scrollTo({top:0,behavior:'smooth'}); }
+renderTickets();
+</script>
+</body>
+</html>

@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Submit a Ticket — HelpdeskOS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;1,9..40,400&display=swap" rel="stylesheet" />
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="css/styles.css" />
+<style>
+  .field-row { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  @media(max-width:640px){ .field-row{grid-template-columns:1fr;} }
+
+  .req-star { color:#ef4444; margin-left:2px; }
+
+  /* Category select cards */
+  .cat-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(96px,1fr)); gap:9px; }
+  .cat-btn {
+    border:2px solid #e2e8f0; border-radius:14px; padding:14px 10px;
+    cursor:pointer; transition:all .17s; text-align:center; background:#fff;
+    display:flex; flex-direction:column; align-items:center; gap:6px;
+  }
+  .cat-btn:hover  { border-color:#93c5fd; background:#eff6ff; }
+  .cat-btn.active { border-color:#2563eb; background:#eff6ff; box-shadow:0 0 0 3px rgba(37,99,235,.12); }
+  .cat-btn .cat-icon  { font-size:26px; line-height:1; }
+  .cat-btn .cat-label { font-size:12px; font-weight:600; color:#475569; }
+  .cat-btn.active .cat-label { color:#1d4ed8; }
+  @media(max-width:600px){.field-row{grid-template-columns:1fr!important;}.cat-grid{grid-template-columns:repeat(auto-fill,minmax(80px,1fr))!important;}}
+
+  /* error state */
+  .input-error { border-color:#ef4444 !important; box-shadow:0 0 0 3px rgba(239,68,68,.1) !important; }
+  .error-msg   { font-size:12px; color:#ef4444; margin-top:4px; display:none; }
+  .error-msg.show { display:block; }
+
+  /* step number */
+  .step-num {
+    background:#2563eb; color:#fff; width:22px; height:22px; border-radius:50%;
+    font-size:11px; display:inline-flex; align-items:center; justify-content:center;
+    margin-right:8px; font-weight:800; flex-shrink:0;
+  }
+  .step-title {
+    font-family:'Plus Jakarta Sans',sans-serif; font-weight:700;
+    font-size:16px; color:#0f172a; display:flex; align-items:center; margin-bottom:16px;
+  }
+
+  /* drop zone */
+  .drop-zone { border:2px dashed #cbd5e1; border-radius:14px; padding:24px; text-align:center; cursor:pointer; transition:all .15s; }
+  .drop-zone:hover,.drop-zone.drag-over { border-color:#60a5fa; background:#eff6ff; }
+</style>
+</head>
+<body data-page="new-ticket" data-root="./">
+<div class="main-wrap">
+  <header id="topbar"></header>
+  <main class="page-main" style="max-width:760px;">
+
+    <!-- Header banner -->
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:24px;padding:20px 24px;background:linear-gradient(135deg,#eff6ff,#f0f5ff);border-radius:18px;border:1.5px solid #bfdbfe;">
+      <div style="width:46px;height:46px;background:#2563eb;border-radius:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 4px 12px rgba(37,99,235,.3);">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+      </div>
+      <div>
+        <div style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:17px;color:#0f172a;">Submit a Support Ticket</div>
+        <div style="font-size:13px;color:#2563eb;margin-top:2px;">⚡ Average response time: 4 minutes · All fields marked <span style="color:#ef4444;">*</span> are required</div>
+      </div>
+    </div>
+
+    <form id="ticketForm" onsubmit="submitTicket(event)" novalidate>
+
+      <!-- ── STEP 1 : Category ── -->
+      <div class="card" style="padding:22px;margin-bottom:16px;">
+        <div class="step-title">
+          <span class="step-num">1</span> Choose a Category <span class="req-star">*</span>
+        </div>
+        <div class="cat-grid" id="categoryGrid">
+          <div class="cat-btn" data-cat="Email"     onclick="selectCat('Email',this)">    <div class="cat-icon">📧</div><div class="cat-label">Email</div></div>
+          <div class="cat-btn" data-cat="Network"   onclick="selectCat('Network',this)">  <div class="cat-icon">🌐</div><div class="cat-label">Network</div></div>
+          <div class="cat-btn" data-cat="Hardware"  onclick="selectCat('Hardware',this)"> <div class="cat-icon">💻</div><div class="cat-label">Hardware</div></div>
+          <div class="cat-btn" data-cat="Software"  onclick="selectCat('Software',this)"> <div class="cat-icon">📦</div><div class="cat-label">Software</div></div>
+          <div class="cat-btn" data-cat="Security"  onclick="selectCat('Security',this)"> <div class="cat-icon">🔐</div><div class="cat-label">Security</div></div>
+          <div class="cat-btn" data-cat="Access"    onclick="selectCat('Access',this)">   <div class="cat-icon">🔑</div><div class="cat-label">Access</div></div>
+          <div class="cat-btn" data-cat="Printer"   onclick="selectCat('Printer',this)">  <div class="cat-icon">🖨</div><div class="cat-label">Printer</div></div>
+          <div class="cat-btn" data-cat="General"   onclick="selectCat('General',this)">  <div class="cat-icon">🔧</div><div class="cat-label">General</div></div>
+          <div class="cat-btn" data-cat="Commandes" onclick="selectCat('Commandes',this)"><div class="cat-icon">🛒</div><div class="cat-label">Commandes</div></div>
+        </div>
+        <input type="hidden" id="categoryInput" />
+        <div class="error-msg" id="err-category">Please select a category.</div>
+      </div>
+
+      <!-- ── STEP 2 : Contact info ── -->
+      <div class="card" style="padding:22px;margin-bottom:16px;">
+        <div class="step-title"><span class="step-num">2</span> Your Information</div>
+        <div class="field-row" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">Email <span class="req-star">*</span></label>
+            <input type="email" id="emailInput" class="form-input" placeholder="you@company.com" autocomplete="email" />
+            <div class="error-msg" id="err-email">Please enter a valid email address.</div>
+          </div>
+
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">Company <span class="req-star">*</span></label>
+            <input type="text" id="societeInput" class="form-input" placeholder="Your company name" />
+            <div class="error-msg" id="err-societe">Please enter your company name.</div>
+          </div>
+
+          <div class="form-group" style="margin-bottom:0;grid-column:1/-1;">
+            <label class="form-label">Contact / Phone <span class="req-star">*</span></label>
+            <input type="text" id="contactInput" class="form-input" placeholder="Phone number or preferred contact method" />
+            <div class="error-msg" id="err-contact">Please enter a contact method.</div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ── STEP 3 : Issue details ── -->
+      <div class="card" style="padding:22px;margin-bottom:16px;">
+        <div class="step-title"><span class="step-num">3</span> Describe Your Issue</div>
+
+        <div class="form-group">
+          <label class="form-label">Subject <span class="req-star">*</span></label>
+          <input type="text" id="subjectInput" class="form-input" placeholder="Brief summary of the issue — e.g. Cannot connect to VPN" maxlength="120" />
+          <div style="display:flex;justify-content:space-between;margin-top:4px;">
+            <div class="error-msg show" id="err-subject" style="display:none;">Please enter a subject.</div>
+            <div style="font-size:11px;color:#94a3b8;margin-left:auto;" id="subjectCount">0 / 120</div>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom:0;">
+          <label class="form-label">Description <span class="req-star">*</span></label>
+          <textarea id="descInput" class="form-textarea" style="min-height:140px;"
+            placeholder="Please describe your issue in detail:&#10;• What happened exactly?&#10;• Any error messages you see&#10;• What you have already tried&#10;• How long has this been happening?"></textarea>
+          <div class="error-msg" id="err-desc">Please describe the issue.</div>
+        </div>
+      </div>
+
+      <!-- ── STEP 4 : Attachments (optional) ── -->
+      <div class="card" style="padding:22px;margin-bottom:20px;">
+        <div class="step-title"><span class="step-num">4</span> Attachments <span style="font-size:13px;font-weight:400;color:#94a3b8;margin-left:6px;">(optional)</span></div>
+        <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+          <div style="font-size:28px;margin-bottom:8px;">📎</div>
+          <div style="font-size:14px;font-weight:600;color:#475569;">Click to upload or drag & drop</div>
+          <div style="font-size:12px;color:#94a3b8;margin-top:4px;">Screenshots, logs, or any relevant files (max 10 MB each)</div>
+          <div id="fileList" style="margin-top:12px;display:flex;flex-wrap:wrap;gap:6px;justify-content:center;"></div>
+          <input type="file" id="fileInput" multiple onchange="handleFiles(this)" style="display:none;" />
+        </div>
+      </div>
+
+      <!-- Submit -->
+      <button type="submit" id="submitBtn" class="btn btn-primary" style="width:100%;justify-content:center;padding:14px;font-size:15px;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+        Submit Ticket
+      </button>
+
+    </form>
+  </main>
+</div>
+
+<script src="js/app.js"></script>
+<script src="js/nav.js"></script>
+<script>
+// Access gate: user must have 'tickets' module
+HDOS.requireAccess('tickets');
+
+const session = HDOS.getSession();
+
+// Pre-fill email from session
+if (session && session.email) {
+  document.getElementById('emailInput').value = session.email;
+}
+
+// ── Category selection ──────────────────────
+let selectedCategory = '';
+function selectCat(cat, el) {
+  selectedCategory = cat;
+  document.getElementById('categoryInput').value = cat;
+  document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  clearError('category');
+}
+
+// ── Validation helpers ──────────────────────
+function showError(id, msg) {
+  const input = document.getElementById(id + 'Input') || document.getElementById(id);
+  const errEl = document.getElementById('err-' + id);
+  if (input) input.classList.add('input-error');
+  if (errEl) { if (msg) errEl.textContent = msg; errEl.classList.add('show'); errEl.style.display = 'block'; }
+}
+function clearError(id) {
+  const input = document.getElementById(id + 'Input') || document.getElementById(id);
+  const errEl = document.getElementById('err-' + id);
+  if (input) input.classList.remove('input-error');
+  if (errEl) { errEl.classList.remove('show'); errEl.style.display = 'none'; }
+}
+
+// Clear on input
+['email','societe','contact','subject','desc'].forEach(id => {
+  const el = document.getElementById(id + 'Input');
+  if (el) el.addEventListener('input', () => clearError(id));
+});
+
+// Subject char count
+document.getElementById('subjectInput').addEventListener('input', function() {
+  document.getElementById('subjectCount').textContent = this.value.length + ' / 120';
+});
+
+// ── Attachments ─────────────────────────────
+const dz = document.getElementById('dropZone');
+dz.addEventListener('dragover',  e => { e.preventDefault(); dz.classList.add('drag-over'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('drag-over'); handleFiles({files: e.dataTransfer.files}); });
+
+function handleFiles(input) {
+  const files = Array.from(input.files || []);
+  const list  = document.getElementById('fileList');
+  files.forEach(f => {
+    const tag = document.createElement('div');
+    tag.style.cssText = 'display:flex;align-items:center;gap:5px;padding:4px 10px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:99px;font-size:12px;color:#1d4ed8;font-weight:500;';
+    tag.innerHTML = `<span>📄</span><span style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${f.name}</span><button onclick="this.parentNode.remove()" style="border:none;background:none;cursor:pointer;color:#94a3b8;padding:0;margin-left:2px;line-height:1;font-size:13px;">✕</button>`;
+    list.appendChild(tag);
+  });
+}
+
+// ── Submit ──────────────────────────────────
+function submitTicket(e) {
+  e.preventDefault();
+
+  const email    = document.getElementById('emailInput').value.trim();
+  const societe  = document.getElementById('societeInput').value.trim();
+  const contact  = document.getElementById('contactInput').value.trim();
+  const subject  = document.getElementById('subjectInput').value.trim();
+  const desc     = document.getElementById('descInput').value.trim();
+
+  let valid = true;
+
+  // Validate each field
+  if (!selectedCategory) { showError('category');                               valid = false; }
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showError('email', 'Please enter a valid email address.'); valid = false; }
+  if (!societe)  { showError('societe',  'Please enter your company name.');    valid = false; }
+  if (!contact)  { showError('contact',  'Please enter a contact method.');     valid = false; }
+  if (!subject)  { showError('subject',  'Please enter a subject.');            valid = false; }
+  if (!desc)     { showError('desc',     'Please describe your issue.');        valid = false; }
+
+  if (!valid) {
+    // Scroll to first error
+    const firstErr = document.querySelector('.input-error');
+    if (firstErr) firstErr.scrollIntoView({ behavior:'smooth', block:'center' });
+    return;
+  }
+
+  const btn = document.getElementById('submitBtn');
+  btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" style="animation:spin .8s linear infinite"><path d="M1 4v6h6M23 20v-6h-6M20.49 9A9 9 0 005.64 5.64L1 10M23 14l-4.64 4.36A9 9 0 013.51 15"/></svg> Submitting…';
+  btn.disabled = true;
+
+  // Append extra info to description
+  const fullDesc = `${desc}\n\n---\nCompany: ${societe}\nContact: ${contact}`;
+
+  setTimeout(() => {
+    const ticket = HDOS.createTicket({ subject, description: fullDesc, category: selectedCategory, priority: 'normal', email, societe, contact });
+    HDOS.toast('Ticket submitted! 🎉', `Ticket #${ticket.id} has been created. We'll contact you at ${email}.`, 'success');
+    setTimeout(() => { location.href = 'ticket-detail.html?id=' + ticket.id; }, 1400);
+  }, 700);
+}
+
+// spin animation for loading button
+const spinStyle = document.createElement('style');
+spinStyle.textContent = '@keyframes spin{to{transform:rotate(360deg)}}';
+document.head.appendChild(spinStyle);
+</script>
+</body>
+</html>

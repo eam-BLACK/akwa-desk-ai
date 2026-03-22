@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Ticket Detail — HelpdeskOS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;1,9..40,400&display=swap" rel="stylesheet" />
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="css/styles.css" />
+<style>
+  .timeline::before { left:19px; }
+  .info-row { display:flex; align-items:flex-start; gap:10px; padding:10px 0; border-bottom:1px solid #f1f5f9; font-size:13.5px; }
+  .info-row:last-child { border-bottom:none; }
+  .info-label { color:#94a3b8; font-weight:500; flex-shrink:0; width:110px; }
+  .info-val   { color:#0f172a; font-weight:600; }
+</style>
+</head>
+<body data-page="tickets" data-root="./" data-title="Ticket Detail" data-subtitle="">
+
+<div class="main-wrap">
+  <header id="topbar"></header>
+  <main class="page-main" style="max-width:1100px;">
+
+    <!-- Breadcrumb -->
+    <div style="display:flex;align-items:center;gap:6px;font-size:13px;color:#94a3b8;margin-bottom:18px;">
+      <a href="tickets.html" style="color:#2563eb;text-decoration:none;font-weight:500;">My Tickets</a>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
+      <span id="breadTicket" style="color:#475569;"></span>
+    </div>
+
+    <div id="ticketContent" style="display:grid;grid-template-columns:1fr 280px;gap:18px;display:grid;grid-template-columns:1fr 300px;gap:20px;">
+      <!-- Left: timeline & comments -->
+      <div id="leftCol">
+        <!-- Main info card -->
+        <div class="card anim-slide-up" style="padding:24px;margin-bottom:18px;" id="mainCard">
+          <div style="text-align:center;padding:30px;color:#94a3b8;">Loading…</div>
+        </div>
+
+        <!-- Activity Timeline -->
+        <div class="card anim-slide-up delay-1" style="padding:22px;" id="timelineCard">
+          <div style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:16px;color:#0f172a;margin-bottom:18px;">
+            Activity Timeline
+          </div>
+          <div class="timeline" id="timelineContainer"></div>
+        </div>
+
+        <!-- Add Comment -->
+        <div class="card anim-slide-up delay-2" style="padding:20px;margin-top:16px;" id="commentCard">
+          <div style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:15px;color:#0f172a;margin-bottom:12px;">Add a Comment or Update</div>
+          <textarea id="commentInput" class="form-textarea" placeholder="Describe any new information, updates, or steps you've already tried…" style="margin-bottom:10px;"></textarea>
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+            <div style="display:flex;gap:8px;">
+              <button class="btn btn-ghost btn-sm" onclick="attachFile()">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
+                Attach File
+              </button>
+            </div>
+            <button onclick="submitComment()" class="btn btn-primary btn-sm">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+              Send Update
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: metadata sidebar -->
+      <div id="rightCol">
+        <!-- Status card -->
+        <div class="card anim-slide-up" style="padding:18px;margin-bottom:14px;" id="statusCard">
+          <div style="font-size:12px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;">Ticket Info</div>
+          <div id="infoRows"></div>
+        </div>
+
+        <!-- Change status (agents/admins) -->
+        <div class="card anim-slide-up delay-1" style="padding:18px;margin-bottom:14px;display:none;" id="agentPanel">
+          <div style="font-size:12px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;">Agent Actions</div>
+          <div class="form-group" style="margin-bottom:10px;">
+            <label class="form-label">Update Status</label>
+            <select id="statusSelect" class="form-select" style="font-size:13px;padding:8px 10px;"></select>
+          </div>
+          <div class="form-group" style="margin-bottom:10px;">
+            <label class="form-label">Assign To</label>
+            <select id="assigneeSelect" class="form-select" style="font-size:13px;padding:8px 10px;"></select>
+          </div>
+          <div class="form-group" style="margin-bottom:10px;">
+            <label class="form-label">Priority</label>
+            <select id="prioritySelect" class="form-select" style="font-size:13px;padding:8px 10px;"></select>
+          </div>
+          <button onclick="applyAgentUpdate()" class="btn btn-primary btn-sm" style="width:100%;justify-content:center;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+            Apply Update
+          </button>
+        </div>
+
+        <!-- Actions -->
+        <div class="card anim-slide-up delay-2" style="padding:18px;" id="actionsCard">
+          <div style="font-size:12px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;">Actions</div>
+          <div style="display:flex;flex-direction:column;gap:7px;">
+            <button onclick="escalateTicket()" class="btn btn-ghost btn-sm" style="justify-content:flex-start;gap:8px;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0zM12 9v4M12 17h.01"/></svg>
+              Escalate Ticket
+            </button>
+            <button onclick="closeTicket()" class="btn btn-ghost btn-sm" style="justify-content:flex-start;gap:8px;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+              Close Ticket
+            </button>
+            <button onclick="createRelated()" class="btn btn-ghost btn-sm" style="justify-content:flex-start;gap:8px;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+              Create Related Ticket
+            </button>
+            <div id="deleteTicketBtn" style="display:none;">
+              <hr class="divider" style="margin:6px 0;">
+              <button onclick="deleteThisTicket()" class="btn btn-danger btn-sm" style="width:100%;justify-content:flex-start;gap:8px;">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+                Delete Ticket
+              </button>
+            </div>
+            <hr class="divider" />
+            <a href="chatbot.html" class="btn btn-ghost btn-sm" style="justify-content:flex-start;gap:8px;text-decoration:none;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20M4 19.5A2.5 2.5 0 004 17V5a2 2 0 012-2h14a2 2 0 012 2v14"/></svg>
+              Browse Knowledge Base
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script src="js/app.js"></script>
+<script src="js/nav.js"></script>
+<script>
+const session = HDOS.getSession();
+const ticketId = parseInt(new URLSearchParams(location.search).get('id'));
+
+function loadTicket() {
+  const ticket = HDOS.getVisibleTickets().find(t => t.id === ticketId);
+  if (!ticket) { document.getElementById('mainCard').innerHTML = '<div style="text-align:center;padding:40px;color:#94a3b8;font-size:14px;">Ticket not found. <a href="tickets.html" style="color:#2563eb;">Back to tickets</a></div>'; return; }
+  document.getElementById('breadTicket').textContent = `#${ticket.id} — ${ticket.subject}`;
+  document.body.setAttribute('data-subtitle', `Ticket #${ticket.id}`);
+
+  // Main card
+  document.getElementById('mainCard').innerHTML = `
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:18px;">
+      <div>
+        <h1 style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:20px;color:#0f172a;margin-bottom:8px;">${ticket.subject}</h1>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
+          ${HDOS.statusBadge(ticket.status)}
+          ${HDOS.priorityBadge(ticket.priority)}
+          <span class="badge badge-slate">${ticket.category}</span>
+          <span style="font-size:12.5px;color:#94a3b8;">Created ${HDOS.formatDateTime(ticket.created)}</span>
+        </div>
+      </div>
+    </div>
+    <div style="background:#f8fafc;border:1.5px solid #e8effd;border-radius:14px;padding:16px;font-size:14px;color:#334155;line-height:1.7;">
+      <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;">Original Description</div>
+      ${ticket.description || 'No description provided.'}
+    </div>
+    ${(ticket.email || ticket.societe || ticket.contact) ? `<div style="margin-top:14px;background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:14px;padding:14px 16px;"><div style="font-size:11px;font-weight:700;color:#1d4ed8;text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px;">Submitter Information</div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;">${ticket.email?`<div style="display:flex;align-items:flex-start;gap:8px;"><span style="font-size:16px;">📧</span><div><div style="font-size:11px;color:#64748b;font-weight:600;text-transform:uppercase;">Email</div><div style="font-size:13.5px;color:#0f172a;font-weight:500;">${ticket.email}</div></div></div>`:''}${ticket.societe?`<div style="display:flex;align-items:flex-start;gap:8px;"><span style="font-size:16px;">🏢</span><div><div style="font-size:11px;color:#64748b;font-weight:600;text-transform:uppercase;">Société</div><div style="font-size:13.5px;color:#0f172a;font-weight:500;">${ticket.societe}</div></div></div>`:''}${ticket.contact?`<div style="display:flex;align-items:flex-start;gap:8px;"><span style="font-size:16px;">📞</span><div><div style="font-size:11px;color:#64748b;font-weight:600;text-transform:uppercase;">Contact</div><div style="font-size:13.5px;color:#0f172a;font-weight:500;">${ticket.contact}</div></div></div>`:''}</div></div>` : ''}`;
+
+  // Info rows
+  const agents = HDOS.getUsers().filter(u => u.role === 'agent' || u.role === 'admin');
+  document.getElementById('infoRows').innerHTML = [
+    ['Ticket ID', `<code style="font-family:monospace;font-size:12px;background:#f1f5f9;padding:2px 6px;border-radius:4px;">#${ticket.id}</code>`],
+    ['Status',    HDOS.statusBadge(ticket.status)],
+    ['Priority',  HDOS.priorityBadge(ticket.priority)],
+    ['Category',  `<span class="info-val">${ticket.category}</span>`],
+    ['Assignee',  `<span class="info-val">${ticket.assignee||'Unassigned'}</span>`],
+    ['Created',   `<span class="info-val">${HDOS.formatDateTime(ticket.created)}</span>`],
+    ['Updated',   `<span class="info-val">${HDOS.timeAgo(ticket.updated)}</span>`],
+    ['Updates',   `<span class="info-val" style="color:#2563eb;">${ticket.timeline?ticket.timeline.length:1}</span>`],
+    ...(ticket.email   ? [['Email',   `<span class="info-val">${ticket.email}</span>`]]   : []),
+    ...(ticket.societe ? [['Société', `<span class="info-val">${ticket.societe}</span>`]] : []),
+    ...(ticket.contact ? [['Contact', `<span class="info-val">${ticket.contact}</span>`]] : []),
+  ].map(([label, val]) => `<div class="info-row"><span class="info-label">${label}</span><div>${val}</div></div>`).join('');
+
+  // Agent panel
+  const isAgent = session && (session.role === 'admin' || session.role === 'agent' || session.role === 'superadmin');
+  if (isAgent) {
+    const ap = document.getElementById('agentPanel');
+    ap.style.display = 'block';
+
+    const isLocked = ticket.status === 'closed' || ticket.status === 'resolved';
+
+    if (isLocked) {
+      // Show a locked banner instead of editable controls
+      ap.innerHTML = `
+        <div style="font-size:12px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;">Agent Actions</div>
+        <div style="display:flex;align-items:center;gap:10px;background:${ticket.status==='resolved'?'#ecfdf5':'#f1f5f9'};border:1.5px solid ${ticket.status==='resolved'?'#a7f3d0':'#e2e8f0'};border-radius:13px;padding:13px 15px;">
+          <span style="font-size:20px;">${ticket.status==='resolved'?'✅':'🔒'}</span>
+          <div>
+            <div style="font-weight:700;font-size:13px;color:${ticket.status==='resolved'?'#059669':'#64748b'};">Ticket ${ticket.status==='resolved'?'Résolu':'Fermé'}</div>
+            <div style="font-size:12px;color:#94a3b8;margin-top:1px;">Ce ticket ne peut plus être modifié.</div>
+          </div>
+        </div>`;
+    } else {
+      // Auto-set Assign To to the person making the update (current session)
+      const autoAssignee = session.name;
+      const statuses = [['open','🔵 Open'],['in_progress','⏳ In Progress'],['under_review','🔍 Under Review'],['awaiting','⏸ Awaiting Reply'],['resolved','✓ Resolved'],['closed','✗ Closed']];
+      document.getElementById('statusSelect').innerHTML = statuses.map(([v,l]) => `<option value="${v}" ${ticket.status===v?'selected':''}>${l}</option>`).join('');
+      // Assign To: auto-set to current user, but still allow changing
+      document.getElementById('assigneeSelect').innerHTML = `<option value="Unassigned">Unassigned</option>` + agents.map(a => `<option value="${a.name}" ${(ticket.assignee===a.name||(!ticket.assignee&&a.name===autoAssignee)||a.name===autoAssignee)?'selected':''}>${a.name}</option>`).join('');
+      document.getElementById('prioritySelect').innerHTML = ['low','normal','high','critical'].map(p => `<option value="${p}" ${ticket.priority===p?'selected':''}>${p.charAt(0).toUpperCase()+p.slice(1)}</option>`).join('');
+    }
+  }
+
+  // Timeline
+  renderTimeline(ticket);
+}
+
+function renderTimeline(ticket) {
+  const tl = ticket.timeline || [];
+  const iconMap = {
+    created:  { bg:'#dbeafe', color:'#2563eb', emoji:'🎫' },
+    assigned: { bg:'#e0e7ff', color:'#4f46e5', emoji:'👤' },
+    status:   { bg:'#fef3c7', color:'#d97706', emoji:'🔄' },
+    comment:  { bg:'#f0fdf4', color:'#059669', emoji:'💬' },
+    resolved: { bg:'#ecfdf5', color:'#059669', emoji:'✅' },
+    escalated:{ bg:'#fef9c3', color:'#b45309', emoji:'⚠️' },
+    closed:   { bg:'#f1f5f9', color:'#64748b', emoji:'🔒' },
+  };
+  document.getElementById('timelineContainer').innerHTML = tl.map((entry, i) => {
+    const cfg = iconMap[entry.type] || { bg:'#f1f5f9', color:'#64748b', emoji:'📌' };
+    const isLast = i === tl.length - 1;
+    return `<div class="timeline-item" style="${isLast?'padding-bottom:0;':''}">
+      <div class="timeline-dot" style="background:${cfg.bg};">
+        <span style="font-size:13px;">${cfg.emoji}</span>
+      </div>
+      <div style="flex:1;padding-top:2px;">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:4px;flex-wrap:wrap;">
+          <div>
+            <span style="font-weight:700;font-size:13.5px;color:#0f172a;">${entry.actor}</span>
+            <span style="font-size:12px;color:${cfg.color};background:${cfg.bg};padding:2px 7px;border-radius:99px;margin-left:7px;font-weight:600;">${entry.type.charAt(0).toUpperCase()+entry.type.slice(1)}</span>
+          </div>
+          <span style="font-size:11.5px;color:#94a3b8;white-space:nowrap;">${HDOS.formatDateTime(entry.time)}</span>
+        </div>
+        <div style="background:#f8fafc;border:1px solid #e8effd;border-radius:12px;padding:10px 14px;font-size:13.5px;color:#334155;line-height:1.6;">${entry.note}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function submitComment() {
+  const ticket = HDOS.getTickets().find(t => t.id === ticketId);
+  if (ticket && (ticket.status === 'closed' || ticket.status === 'resolved')) {
+    HDOS.toast('Ticket verrouillé', 'Impossible d\'ajouter un commentaire à un ticket ' + ticket.status + '.', 'error'); return;
+  }
+  const note = document.getElementById('commentInput').value.trim();
+  if (!note) { HDOS.toast('Écrivez un commentaire d\'abord', null, 'error'); return; }
+  const updated = HDOS.addTimelineEntry(ticketId, { type:'comment', actor: session.name, note });
+  // Auto-assign to the commenter
+  const tickets = HDOS.getTickets();
+  const t = tickets.find(t => t.id === ticketId);
+  if (t) { t.assignee = session.name; t.updated = new Date().toISOString(); HDOS.saveTickets(tickets); }
+  document.getElementById('commentInput').value = '';
+  loadTicket();
+  HDOS.toast('Commentaire ajouté', null, 'success');
+}
+
+function applyAgentUpdate() {
+  const tickets = HDOS.getTickets();
+  const ticket  = tickets.find(t => t.id === ticketId);
+  if (!ticket) return;
+
+  // Block update if already closed or resolved
+  if (ticket.status === 'closed' || ticket.status === 'resolved') {
+    HDOS.toast('Ticket verrouillé', 'Ce ticket est ' + ticket.status + ' et ne peut plus être modifié.', 'error');
+    return;
+  }
+
+  const newStatus   = document.getElementById('statusSelect').value;
+  const newAssignee = document.getElementById('assigneeSelect').value;
+  const newPriority = document.getElementById('prioritySelect').value;
+
+  // Block transition to closed/resolved only if already locked (extra safety)
+  const changes = [];
+  if (newStatus   !== ticket.status)   changes.push(`Status → <strong>${newStatus.replace(/_/g,' ')}</strong>`);
+  if (newAssignee !== ticket.assignee) changes.push(`Assigné à <strong>${newAssignee}</strong>`);
+  if (newPriority !== ticket.priority) changes.push(`Priorité → <strong>${newPriority}</strong>`);
+  if (!changes.length) { HDOS.toast('Aucun changement', null, 'info'); return; }
+
+  ticket.status   = newStatus;
+  ticket.priority = newPriority;
+  // Auto-assign to the person making this update
+  ticket.assignee = session.name;
+  ticket.updated  = new Date().toISOString();
+  HDOS.saveTickets(tickets);
+
+  HDOS.addTimelineEntry(ticketId, {
+    type:  'status',
+    actor: session.name,
+    note:  changes.join('. ') + `. Assigné automatiquement à ${session.name}.`
+  });
+
+  loadTicket();
+  HDOS.toast('Ticket mis à jour', changes.map(c => c.replace(/<[^>]+>/g,'')).join(' · '), 'success');
+}
+
+function escalateTicket() {
+  const ticket = HDOS.getTickets().find(t => t.id === ticketId);
+  if (ticket && (ticket.status === 'closed' || ticket.status === 'resolved')) {
+    HDOS.toast('Ticket verrouillé', 'Impossible d\'escalader un ticket ' + ticket.status + '.', 'error'); return;
+  }
+  HDOS.addTimelineEntry(ticketId, { type:'escalated', actor: session.name, note: 'Ticket escaladé au staff IT senior.' });
+  const tickets = HDOS.getTickets();
+  const t = tickets.find(t => t.id === ticketId);
+  if (t) { t.priority = 'high'; t.assignee = session.name; HDOS.saveTickets(tickets); }
+  loadTicket();
+  HDOS.toast('Ticket escaladé', 'L\'IT senior a été notifié.', 'info');
+}
+
+function closeTicket() {
+  const ticket = HDOS.getTickets().find(t => t.id === ticketId);
+  if (ticket && (ticket.status === 'closed' || ticket.status === 'resolved')) {
+    HDOS.toast('Déjà ' + ticket.status, null, 'info'); return;
+  }
+  if (!confirm('Fermer ce ticket ? Cette action est définitive.')) return;
+  const tickets = HDOS.getTickets();
+  const t = tickets.find(t => t.id === ticketId);
+  if (t) { t.status = 'closed'; t.assignee = session.name; t.updated = new Date().toISOString(); HDOS.saveTickets(tickets); }
+  HDOS.addTimelineEntry(ticketId, { type:'closed', actor: session.name, note: 'Ticket fermé.' });
+  loadTicket();
+  HDOS.toast('Ticket fermé', null, 'success');
+}
+
+function createRelated() { location.href = 'new-ticket.html'; }
+function attachFile()    { HDOS.toast('Attachment', 'File attachment UI coming soon.', 'info'); }
+
+// Responsive layout
+function adjustLayout() {
+  const grid = document.getElementById('ticketContent');
+  if (grid) grid.style.gridTemplateColumns = window.innerWidth < 900 ? '1fr' : '1fr 280px';
+}
+adjustLayout(); window.addEventListener('resize', adjustLayout);
+
+loadTicket();
+
+// Show delete button only if user has delete_tickets permission
+if (HDOS.hasAccess('delete_tickets')) {
+  const btn = document.getElementById('deleteTicketBtn');
+  if (btn) btn.style.display = 'block';
+}
+
+function deleteThisTicket() {
+  if (!confirm('Supprimer définitivement ce ticket ? Cette action est irréversible.')) return;
+  const tickets = HDOS.getTickets().filter(t => t.id !== ticketId);
+  HDOS.saveTickets(tickets);
+  HDOS.toast('Ticket supprimé', null, 'success');
+  setTimeout(() => location.href = 'tickets.html', 800);
+}
+</script>
+</body>
+</html>

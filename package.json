@@ -1,0 +1,12 @@
+{
+  "name": "helpdeskos",
+  "version": "1.0.0",
+  "description": "HelpdeskOS — Internal IT Support Portal",
+  "private": true,
+  "dependencies": {
+    "@netlify/blobs": "^7.0.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

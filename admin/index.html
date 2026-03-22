@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Admin Dashboard — HelpdeskOS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;1,9..40,400&display=swap" rel="stylesheet" />
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="../css/styles.css" />
+<style>
+  .admin-banner { background:linear-gradient(135deg,#1e1b4b,#312e81,#4338ca);border-radius:20px;padding:20px 24px;position:relative;overflow:hidden; }
+  .admin-banner::before { content:'';position:absolute;inset:0;background-image:radial-gradient(circle,rgba(255,255,255,.06) 1px,transparent 1px);background-size:20px 20px; }
+  .bar-chart { display:flex;align-items:flex-end;gap:5px;height:80px; }
+  .bar { border-radius:4px 4px 0 0;min-width:10px;transition:opacity .2s;cursor:pointer; }
+  .bar:hover { opacity:.75; }
+</style>
+</head>
+<body data-page="admin" data-root="../" data-title="Admin Dashboard" data-subtitle="Vue d'ensemble en temps réel">
+
+<div class="main-wrap">
+  <header id="topbar"></header>
+  <main class="page-main">
+
+    <!-- Banner -->
+    <div class="admin-banner anim-slide-up" style="margin-bottom:22px;">
+      <div style="position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;">
+        <div>
+          <div style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:20px;color:#fff;">Panneau d'administration 🛡</div>
+          <div style="font-size:13px;color:rgba(255,255,255,.7);margin-top:3px;">Données en temps réel du portail.</div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <a href="users.html" class="btn" style="background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.3);color:#fff;font-size:13px;text-decoration:none;">
+            👥 Utilisateurs
+          </a>
+          <a href="tickets.html" class="btn" style="background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.3);color:#fff;font-size:13px;text-decoration:none;">
+            📋 Tous les Tickets
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- KPI strip -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:14px;margin-bottom:22px;" id="kpiRow"></div>
+
+    <!-- Charts row -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:20px;" id="chartRow">
+
+      <!-- Tickets by status donut -->
+      <div class="card" style="padding:20px;">
+        <div style="font-weight:700;font-size:14px;color:#0f172a;margin-bottom:2px;">Tickets par statut</div>
+        <div style="font-size:12px;color:#94a3b8;margin-bottom:14px;">Total en base</div>
+        <div style="position:relative;width:100px;height:100px;margin:0 auto 14px;" id="donutWrap"></div>
+        <div id="donutLegend" style="display:flex;flex-direction:column;gap:5px;"></div>
+      </div>
+
+      <!-- Tickets by category -->
+      <div class="card" style="padding:20px;">
+        <div style="font-weight:700;font-size:14px;color:#0f172a;margin-bottom:2px;">Par catégorie</div>
+        <div style="font-size:12px;color:#94a3b8;margin-bottom:14px;">Répartition réelle</div>
+        <div id="categoryBars" style="display:flex;flex-direction:column;gap:9px;"></div>
+      </div>
+
+      <!-- Priority distribution -->
+      <div class="card" style="padding:20px;">
+        <div style="font-weight:700;font-size:14px;color:#0f172a;margin-bottom:2px;">Par priorité</div>
+        <div style="font-size:12px;color:#94a3b8;margin-bottom:14px;">Répartition réelle</div>
+        <div id="priorityBars" style="display:flex;flex-direction:column;gap:9px;"></div>
+      </div>
+
+    </div>
+
+    <!-- Bottom row -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;" id="bottomRow">
+
+      <!-- Recent tickets -->
+      <div class="card" style="padding:20px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+          <div style="font-weight:700;font-size:15px;color:#0f172a;">Tickets Récents</div>
+          <a href="tickets.html" style="font-size:12.5px;color:#2563eb;font-weight:600;text-decoration:none;">Voir tout →</a>
+        </div>
+        <div id="recentTickets" style="display:flex;flex-direction:column;gap:8px;"></div>
+      </div>
+
+      <!-- Users overview -->
+      <div class="card" style="padding:20px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+          <div style="font-weight:700;font-size:15px;color:#0f172a;">Utilisateurs</div>
+          <a href="users.html" style="font-size:12.5px;color:#2563eb;font-weight:600;text-decoration:none;">Gérer →</a>
+        </div>
+        <div id="usersList" style="display:flex;flex-direction:column;gap:10px;"></div>
+
+        <!-- User stats summary -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid #f1f5f9;" id="userStatsMini"></div>
+      </div>
+
+    </div>
+
+  </main>
+</div>
+
+<script src="../js/app.js"></script>
+<script src="../js/nav.js"></script>
+<script>
+HDOS.requireAdmin();
+
+// ── Pull 100% real data ────────────────────
+const tickets = HDOS.getTickets();
+const users   = HDOS.getUsers();
+
+const open        = tickets.filter(t => ['open','in_progress','under_review','awaiting'].includes(t.status)).length;
+const resolved    = tickets.filter(t => t.status === 'resolved').length;
+const closed      = tickets.filter(t => t.status === 'closed').length;
+const activeUsers = users.filter(u => u.status === 'active').length;
+const resolutionRate = tickets.length ? Math.round((resolved + closed) / tickets.length * 100) : 0;
+
+// Avg response time: real — based on timeline gap between created and first status change
+function calcAvgResponseMin() {
+  const times = [];
+  tickets.forEach(t => {
+    if (!t.timeline || t.timeline.length < 2) return;
+    const created = new Date(t.timeline[0].time).getTime();
+    const first   = t.timeline.find(e => e.type === 'status' || e.type === 'comment' || e.type === 'assigned');
+    if (first) {
+      const mins = (new Date(first.time).getTime() - created) / 60000;
+      if (mins > 0 && mins < 1440) times.push(mins); // ignore > 24h outliers
+    }
+  });
+  if (!times.length) return '—';
+  const avg = times.reduce((a,b)=>a+b,0)/times.length;
+  return avg < 60 ? Math.round(avg) + 'm' : (avg/60).toFixed(1) + 'h';
+}
+
+// ── KPI row ────────────────────────────────
+document.getElementById('kpiRow').innerHTML = [
+  { label:'Tickets ouverts',   value: open,                                    icon:'📋', color:'#2563eb', bg:'#eff6ff', delta:`${tickets.length} total` },
+  { label:'Résolus',           value: resolved + closed,                        icon:'✅', color:'#059669', bg:'#ecfdf5', delta:`Taux: ${resolutionRate}%` },
+  { label:'Taux résolution',   value: resolutionRate + '%',                     icon:'📈', color:'#d97706', bg:'#fffbeb', delta:`${tickets.length} tickets` },
+  { label:'Temps moy. réponse',value: calcAvgResponseMin(),                     icon:'⚡', color:'#7c3aed', bg:'#faf5ff', delta:'basé sur données réelles' },
+  { label:'Utilisateurs actifs',value: activeUsers,                             icon:'👥', color:'#0ea5e9', bg:'#f0f9ff', delta:`${users.length} total` },
+  { label:'Total tickets',     value: tickets.length,                           icon:'🎫', color:'#64748b', bg:'#f8fafc', delta:'toutes périodes' },
+].map(s => `<div class="card stat-card anim-slide-up">
+  <div style="display:flex;align-items:center;gap:10px;">
+    <div style="width:40px;height:40px;border-radius:12px;background:${s.bg};display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;">${s.icon}</div>
+    <div>
+      <div class="stat-value" style="font-size:20px;color:${s.color};">${s.value}</div>
+      <div class="stat-label" style="font-size:10px;">${s.label}</div>
+      <div style="font-size:10px;color:#94a3b8;margin-top:1px;">${s.delta}</div>
+    </div>
+  </div>
+</div>`).join('');
+
+// ── Donut: real status breakdown ───────────
+const statusGroups = {
+  open:         tickets.filter(t=>t.status==='open').length,
+  in_progress:  tickets.filter(t=>t.status==='in_progress').length,
+  under_review: tickets.filter(t=>t.status==='under_review').length,
+  resolved:     tickets.filter(t=>t.status==='resolved').length,
+  closed:       tickets.filter(t=>t.status==='closed').length,
+};
+const donutColors = { open:'#3b82f6', in_progress:'#f59e0b', under_review:'#6366f1', resolved:'#10b981', closed:'#94a3b8' };
+const donutLabels = { open:'Open', in_progress:'In Progress', under_review:'Under Review', resolved:'Resolved', closed:'Closed' };
+const total = Object.values(statusGroups).reduce((a,b)=>a+b,0);
+const R=40, C=2*Math.PI*R;
+let offset=0;
+const paths = Object.entries(statusGroups).map(([key,val]) => {
+  const pct  = total ? val/total : 0;
+  const dash = pct*C, gap = C-dash;
+  const path = `<circle cx="50" cy="50" r="${R}" fill="none" stroke="${donutColors[key]}" stroke-width="16" stroke-dasharray="${dash} ${gap}" stroke-dashoffset="${-offset*C/360-C/4}" />`;
+  offset += pct*360;
+  return path;
+}).join('');
+document.getElementById('donutWrap').innerHTML = `<svg viewBox="0 0 100 100" width="100" height="100"><circle cx="50" cy="50" r="40" fill="none" stroke="#f1f5f9" stroke-width="16"/>${paths}</svg><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;"><div style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:18px;color:#0f172a;">${total}</div><div style="font-size:10px;color:#94a3b8;">tickets</div></div>`;
+document.getElementById('donutLegend').innerHTML = Object.entries(statusGroups).map(([key,val]) =>
+  `<div style="display:flex;align-items:center;gap:6px;font-size:12px;">
+    <span style="width:8px;height:8px;background:${donutColors[key]};border-radius:50%;flex-shrink:0;"></span>
+    <span style="flex:1;color:#475569;">${donutLabels[key]}</span>
+    <span style="font-weight:700;color:#0f172a;">${val}</span>
+  </div>`).join('');
+
+// ── Category bars: real counts ─────────────
+const catCounts = {};
+tickets.forEach(t => { catCounts[t.category] = (catCounts[t.category]||0)+1; });
+const sortedCats = Object.entries(catCounts).sort((a,b)=>b[1]-a[1]);
+const maxCat = sortedCats.length ? sortedCats[0][1] : 1;
+document.getElementById('categoryBars').innerHTML = sortedCats.length
+  ? sortedCats.map(([cat,val]) => `<div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px;">
+        <span style="color:#475569;font-weight:500;">${cat}</span>
+        <span style="color:#0f172a;font-weight:700;">${val}</span>
+      </div>
+      <div style="height:6px;background:#f1f5f9;border-radius:99px;overflow:hidden;">
+        <div style="height:100%;width:${val/maxCat*100}%;background:#3b82f6;border-radius:99px;"></div>
+      </div>
+    </div>`).join('')
+  : '<div style="text-align:center;color:#94a3b8;font-size:13px;padding:20px 0;">Aucun ticket</div>';
+
+// ── Priority bars: real counts ─────────────
+const priColors = { critical:'#7c3aed', high:'#ef4444', normal:'#f59e0b', low:'#10b981' };
+const priCounts = { critical:0, high:0, normal:0, low:0 };
+tickets.forEach(t => { if(priCounts[t.priority]!==undefined) priCounts[t.priority]++; });
+const maxPri = Math.max(...Object.values(priCounts), 1);
+document.getElementById('priorityBars').innerHTML = Object.entries(priCounts).map(([pri,val]) => `<div>
+  <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px;">
+    <span style="display:flex;align-items:center;gap:5px;color:#475569;font-weight:500;">
+      <span style="width:8px;height:8px;border-radius:50%;background:${priColors[pri]};display:inline-block;"></span>
+      ${pri.charAt(0).toUpperCase()+pri.slice(1)}
+    </span>
+    <span style="color:#0f172a;font-weight:700;">${val}</span>
+  </div>
+  <div style="height:6px;background:#f1f5f9;border-radius:99px;overflow:hidden;">
+    <div style="height:100%;width:${val/maxPri*100}%;background:${priColors[pri]};border-radius:99px;"></div>
+  </div>
+</div>`).join('');
+
+// ── Recent tickets: real, sorted by updated ─
+const recent = [...tickets].sort((a,b) => new Date(b.updated)-new Date(a.updated)).slice(0,7);
+const statusDot = { open:'#3b82f6', in_progress:'#f59e0b', under_review:'#6366f1', resolved:'#10b981', closed:'#94a3b8', awaiting:'#64748b' };
+document.getElementById('recentTickets').innerHTML = recent.length
+  ? recent.map(t => `
+    <a href="../ticket-detail.html?id=${t.id}" style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:#f8fafc;border:1px solid #e8effd;border-radius:12px;text-decoration:none;transition:background .12s;" onmouseover="this.style.background='#eff6ff'" onmouseout="this.style.background='#f8fafc'">
+      <div style="width:8px;height:8px;border-radius:50%;background:${statusDot[t.status]||'#94a3b8'};flex-shrink:0;"></div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:500;color:#0f172a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">#${t.id} ${t.subject}</div>
+        <div style="font-size:11.5px;color:#94a3b8;margin-top:1px;">${t.assignee||'Non assigné'} · ${HDOS.timeAgo(t.updated)}</div>
+      </div>
+      ${HDOS.statusBadge(t.status)}
+    </a>`).join('')
+  : '<div style="text-align:center;color:#94a3b8;font-size:13px;padding:20px 0;">Aucun ticket</div>';
+
+// ── Users list: real data ──────────────────
+const roleLabel = { superadmin:'Super Admin', admin:'Admin', agent:'Agent IT', employee:'Employé' };
+const roleColor = { superadmin:'#f59e0b', admin:'#7c3aed', agent:'#0ea5e9', employee:'#10b981' };
+document.getElementById('usersList').innerHTML = users.length
+  ? users.map(u => `
+    <div style="display:flex;align-items:center;gap:9px;">
+      <div class="avatar-placeholder" style="width:34px;height:34px;font-size:12px;flex-shrink:0;">${u.avatar}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13.5px;font-weight:600;color:#0f172a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${u.name}</div>
+        <div style="font-size:11.5px;color:${roleColor[u.role]||'#64748b'};font-weight:600;">${roleLabel[u.role]||u.role}</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0;">
+        <div style="display:flex;align-items:center;gap:4px;">
+          <span style="width:6px;height:6px;border-radius:50%;background:${u.status==='active'?'#10b981':'#94a3b8'};"></span>
+          <span style="font-size:11.5px;color:${u.status==='active'?'#059669':'#94a3b8'};font-weight:600;">${u.status==='active'?'Actif':'Inactif'}</span>
+        </div>
+        <div style="font-size:11px;color:#94a3b8;margin-top:1px;">${tickets.filter(t=>t.userId===u.id).length} tickets</div>
+      </div>
+    </div>`).join('')
+  : '<div style="text-align:center;color:#94a3b8;font-size:13px;padding:20px 0;">Aucun utilisateur</div>';
+
+// User stats mini summary
+document.getElementById('userStatsMini').innerHTML = [
+  { label:'Actifs',   value: users.filter(u=>u.status==='active').length,   color:'#059669' },
+  { label:'Admins',   value: users.filter(u=>u.role==='admin'||u.role==='superadmin').length, color:'#7c3aed' },
+  { label:'Inactifs', value: users.filter(u=>u.status==='inactive').length, color:'#94a3b8' },
+].map(s => `<div style="text-align:center;padding:8px;background:#f8fafc;border-radius:10px;">
+  <div style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:18px;color:${s.color};">${s.value}</div>
+  <div style="font-size:11px;color:#94a3b8;">${s.label}</div>
+</div>`).join('');
+
+// ── Responsive ─────────────────────────────
+function adjustLayout() {
+  const cr = document.getElementById('chartRow');
+  const br = document.getElementById('bottomRow');
+  const w  = window.innerWidth;
+  if (cr) cr.style.gridTemplateColumns = w<900?'1fr':w<1200?'1fr 1fr':'1fr 1fr 1fr';
+  if (br) br.style.gridTemplateColumns = w<900?'1fr':'1fr 1fr';
+}
+adjustLayout(); window.addEventListener('resize', adjustLayout);
+</script>
+</body>
+</html>

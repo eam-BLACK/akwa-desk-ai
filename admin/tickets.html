@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>All Tickets — HelpdeskOS Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;1,9..40,400&display=swap" rel="stylesheet" />
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="../css/styles.css" />
+</head>
+<body data-page="admin-tickets" data-root="../" data-title="All Tickets" data-subtitle="Full queue management for IT staff">
+
+<div class="main-wrap">
+  <header id="topbar"></header>
+  <main class="page-main">
+
+    <!-- Stats strip -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:18px;" id="ticketStats"></div>
+
+    <!-- Filters -->
+    <div class="card" style="padding:14px 18px;margin-bottom:14px;">
+      <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;">
+        <!-- Search -->
+        <div style="flex:1;min-width:200px;display:flex;align-items:center;gap:8px;background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:10px;padding:7px 12px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <input id="ticketSearch" placeholder="Search by subject, ID, or user…" style="flex:1;border:none;background:transparent;font-family:'DM Sans',sans-serif;font-size:13px;outline:none;color:#0f172a;" oninput="renderTickets()" />
+        </div>
+        <!-- Status tabs -->
+        <div class="tab-pills" style="overflow-x:auto;">
+          <button class="tab-pill active" data-s="all"         onclick="setStatus('all',this)">All</button>
+          <button class="tab-pill" data-s="open"               onclick="setStatus('open',this)">Open</button>
+          <button class="tab-pill" data-s="in_progress"        onclick="setStatus('in_progress',this)">In Progress</button>
+          <button class="tab-pill" data-s="under_review"       onclick="setStatus('under_review',this)">Under Review</button>
+          <button class="tab-pill" data-s="resolved"           onclick="setStatus('resolved',this)">Resolved</button>
+        </div>
+        <!-- More filters -->
+        <select id="priFilter"  class="form-select" style="width:auto;padding:7px 28px 7px 10px;font-size:13px;border-radius:10px;" onchange="renderTickets()">
+          <option value="">All Priorities</option>
+          <option>critical</option><option>high</option><option>normal</option><option>low</option>
+        </select>
+        <select id="catFilter" class="form-select" style="width:auto;padding:7px 28px 7px 10px;font-size:13px;border-radius:10px;" onchange="renderTickets()">
+          <option value="">All Categories</option>
+          <option>Email</option><option>Network</option><option>Hardware</option>
+          <option>Software</option><option>Security</option><option>Access</option><option>General</option>
+        </select>
+        <select id="assigneeFilter" class="form-select" style="width:auto;padding:7px 28px 7px 10px;font-size:13px;border-radius:10px;" onchange="renderTickets()" id="assigneeFilter">
+          <option value="">All Agents</option>
+        </select>
+        <button onclick="exportTickets()" class="btn btn-ghost btn-sm">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+          Export
+        </button>
+      </div>
+    </div>
+
+    <!-- Bulk actions bar -->
+    <div id="bulkBar" style="display:none;background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:14px;padding:10px 16px;margin-bottom:12px;align-items:center;gap:12px;flex-wrap:wrap;">
+      <span id="bulkCount" style="font-size:13.5px;font-weight:600;color:#1d4ed8;"></span>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        <button onclick="bulkAction('in_progress')" class="btn btn-secondary btn-sm">Set In Progress</button>
+        <button onclick="bulkAction('resolved')"    class="btn btn-secondary btn-sm">Mark Resolved</button>
+        <button onclick="bulkAction('closed')"      class="btn btn-secondary btn-sm">Close</button>
+        <select id="bulkAssign" class="form-select" style="width:auto;padding:6px 28px 6px 10px;font-size:12.5px;border-radius:9px;height:34px;" onchange="bulkAssign(this.value)">
+          <option value="">Assign to…</option>
+        </select>
+      </div>
+      <button onclick="clearSelection()" class="btn btn-ghost btn-sm" style="margin-left:auto;">Clear</button>
+    </div>
+
+    <!-- Tickets table -->
+    <div class="card" style="overflow:hidden;">
+      <div style="overflow-x:auto;">
+        </div><div style="overflow-x:auto;"><table class="data-table">
+          <thead><tr>
+            <th style="width:36px;"><input type="checkbox" id="selectAll" onchange="toggleSelectAll(this)" style="accent-color:#2563eb;" /></th>
+            <th style="width:65px;"># ID</th>
+            <th>Subject</th>
+            <th class="hide-sm">User</th>
+            <th class="hide-sm">Category</th>
+            <th>Priority</th>
+            <th>Status</th>
+            <th class="hide-md">Assignee</th>
+            <th class="hide-sm">Updated</th>
+            <th style="width:36px;"></th>
+          </tr></thead>
+          <tbody id="ticketBody"></tbody>
+        </table>
+      </div>
+      <div style="padding:12px 20px;border-top:1px solid #f1f5f9;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+        <div id="paginationInfo" style="font-size:13px;color:#64748b;"></div>
+        <div id="paginationBtns" style="display:flex;gap:5px;"></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Quick Edit Modal -->
+<div class="modal-overlay" id="quickEditModal">
+  <div class="modal-box" style="padding:0;max-width:460px;">
+    <div style="padding:18px 22px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;justify-content:space-between;">
+      <div>
+        <div id="qeTitle" style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:17px;color:#0f172a;"></div>
+        <div id="qeSub" style="font-size:12.5px;color:#94a3b8;margin-top:2px;"></div>
+      </div>
+      <button onclick="HDOS.closeModal('quickEditModal')" style="width:32px;height:32px;border-radius:9px;border:1.5px solid #e2e8f0;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div style="padding:18px 22px;">
+      <input type="hidden" id="qeId" />
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+        <div class="form-group" style="margin-bottom:0;"><label class="form-label">Status</label><select id="qeStatus" class="form-select" style="font-size:13px;"></select></div>
+        <div class="form-group" style="margin-bottom:0;"><label class="form-label">Priority</label><select id="qePriority" class="form-select" style="font-size:13px;"></select></div>
+        <div class="form-group" style="margin-bottom:0;grid-column:1/-1;"><label class="form-label">Assign To</label><select id="qeAssignee" class="form-select" style="font-size:13px;"></select></div>
+      </div>
+      <div class="form-group" style="margin-bottom:0;"><label class="form-label">Internal Note (visible to agents only)</label><textarea id="qeNote" class="form-textarea" style="min-height:70px;" placeholder="Optional note about this update…"></textarea></div>
+    </div>
+    <div style="padding:14px 22px;border-top:1px solid #f1f5f9;display:flex;gap:8px;justify-content:flex-end;">
+      <button onclick="HDOS.closeModal('quickEditModal')" class="btn btn-ghost btn-sm">Cancel</button>
+      <button onclick="applyQuickEdit()" class="btn btn-primary btn-sm">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+        Save Changes
+      </button>
+    </div>
+  </div>
+</div>
+
+<script src="../js/app.js"></script>
+<script src="../js/nav.js"></script>
+<script>
+HDOS.requireAdmin();
+const session = HDOS.getSession();
+let activeStatus = 'all', page = 1;
+const PER_PAGE = 15;
+const selected = new Set();
+
+const agents = HDOS.getUsers().filter(u => u.role==='agent'||u.role==='admin');
+// Populate agent selects
+['assigneeFilter','bulkAssign'].forEach(id => {
+  const el = document.getElementById(id);
+  if (!el) return;
+  agents.forEach(a => { const o=document.createElement('option'); o.value=a.name; o.textContent=a.name; el.appendChild(o); });
+});
+
+function setStatus(s, btn) {
+  activeStatus = s; page = 1;
+  document.querySelectorAll('.tab-pill').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderTickets();
+}
+
+function getFiltered() {
+  const q   = document.getElementById('ticketSearch').value.toLowerCase();
+  const pri = document.getElementById('priFilter').value;
+  const cat = document.getElementById('catFilter').value;
+  const ag  = document.getElementById('assigneeFilter').value;
+  let tickets = HDOS.getVisibleTickets();
+  if (activeStatus !== 'all') tickets = tickets.filter(t=>t.status===activeStatus);
+  if (q)   tickets = tickets.filter(t=>t.subject.toLowerCase().includes(q)||String(t.id).includes(q));
+  if (pri) tickets = tickets.filter(t=>t.priority===pri);
+  if (cat) tickets = tickets.filter(t=>t.category===cat);
+  if (ag)  tickets = tickets.filter(t=>t.assignee===ag);
+  tickets.sort((a,b)=>new Date(b.updated)-new Date(a.updated));
+  return tickets;
+}
+
+function renderStats() {
+  const all = HDOS.getVisibleTickets();
+  document.getElementById('ticketStats').innerHTML = [
+    { label:'Total',       value:all.length,                                                           color:'#475569',bg:'#f8fafc',icon:'🎫' },
+    { label:'Open',        value:all.filter(t=>t.status==='open').length,                              color:'#2563eb',bg:'#eff6ff',icon:'🔵' },
+    { label:'In Progress', value:all.filter(t=>t.status==='in_progress').length,                       color:'#d97706',bg:'#fffbeb',icon:'⏳' },
+    { label:'Under Review',value:all.filter(t=>t.status==='under_review').length,                      color:'#4f46e5',bg:'#eef2ff',icon:'🔍' },
+    { label:'Resolved',    value:all.filter(t=>t.status==='resolved').length,                          color:'#059669',bg:'#ecfdf5',icon:'✅' },
+    { label:'Unassigned',  value:all.filter(t=>!t.assignee||t.assignee==='Unassigned').length,         color:'#dc2626',bg:'#fef2f2',icon:'⚠️' },
+  ].map(s=>`<div class="card" style="padding:12px 14px;">
+    <div style="display:flex;align-items:center;gap:7px;"><div style="width:32px;height:32px;border-radius:9px;background:${s.bg};display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">${s.icon}</div>
+    <div><div style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:18px;color:${s.color};">${s.value}</div><div style="font-size:10.5px;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;font-weight:500;">${s.label}</div></div></div>
+  </div>`).join('');
+}
+
+function renderTickets() {
+  const all   = getFiltered();
+  const total = all.length;
+  const start = (page-1)*PER_PAGE;
+  const slice = all.slice(start, start+PER_PAGE);
+
+  const users = HDOS.getUsers();
+  const getUserName = id => { const u = users.find(u=>u.id===id); return u?u.name:'Unknown'; };
+
+  document.getElementById('ticketBody').innerHTML = slice.map(t=>`
+    <tr>
+      <td onclick="event.stopPropagation()"><input type="checkbox" class="row-check" value="${t.id}" ${selected.has(t.id)?'checked':''} style="accent-color:#2563eb;" onchange="toggleRow(${t.id},this)" /></td>
+      <td onclick="location.href='../ticket-detail.html?id=${t.id}'"><span style="font-family:monospace;font-size:12px;color:#64748b;background:#f8fafc;padding:2px 6px;border-radius:5px;">#${t.id}</span></td>
+      <td onclick="location.href='../ticket-detail.html?id=${t.id}'">
+        <div style="font-weight:500;font-size:13.5px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${t.subject}</div>
+        <div style="font-size:11.5px;color:#94a3b8;margin-top:1px;">${HDOS.formatDate(t.created)}</div>
+      </td>
+      <td class="hide-sm" onclick="location.href='../ticket-detail.html?id=${t.id}'" style="font-size:13px;color:#475569;">${getUserName(t.userId)}</td>
+      <td class="hide-sm" onclick="location.href='../ticket-detail.html?id=${t.id}'"><span style="font-size:12px;background:#f1f5f9;color:#64748b;padding:2px 8px;border-radius:99px;">${t.category}</span></td>
+      <td onclick="location.href='../ticket-detail.html?id=${t.id}'">
+        <div style="display:flex;align-items:center;gap:5px;">
+          <span class="priority-dot priority-${t.priority}"></span>
+          <span style="font-size:12.5px;color:#475569;text-transform:capitalize;">${t.priority}</span>
+        </div>
+      </td>
+      <td onclick="location.href='../ticket-detail.html?id=${t.id}'">${HDOS.statusBadge(t.status)}</td>
+      <td class="hide-md" onclick="openQuickEdit(${t.id})">
+        <span style="font-size:13px;color:${t.assignee&&t.assignee!=='Unassigned'?'#475569':'#ef4444'};font-weight:${t.assignee&&t.assignee!=='Unassigned'?'400':'600'};">${t.assignee||'⚠️ Unassigned'}</span>
+      </td>
+      <td class="hide-sm" onclick="location.href='../ticket-detail.html?id=${t.id}'" style="font-size:12px;color:#94a3b8;white-space:nowrap;">${HDOS.timeAgo(t.updated)}</td>
+      <td onclick="event.stopPropagation()">
+        <button onclick="openQuickEdit(${t.id})" style="width:28px;height:28px;border-radius:8px;border:1.5px solid #e2e8f0;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;" onmouseover="this.style.background='#eff6ff'" onmouseout="this.style.background='#fff'" title="Quick Edit">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.5"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </button>
+        <span id="del-btn-${t.id}"></span>
+      </td>
+    </tr>`).join('') || `<tr><td colspan="10" style="text-align:center;padding:40px;color:#94a3b8;"><div style="font-size:28px;margin-bottom:8px;">📋</div>No tickets match your filters.</td></tr>`;
+
+  document.getElementById('paginationInfo').textContent = total ? `Showing ${start+1}–${Math.min(start+PER_PAGE,total)} of ${total}` : '';
+  const totalPages = Math.ceil(total/PER_PAGE);
+  const btns=[];
+  if(page>1) btns.push(`<button onclick="goPage(${page-1})" class="btn btn-secondary btn-sm">← Prev</button>`);
+  for(let p=Math.max(1,page-2);p<=Math.min(totalPages,page+2);p++) btns.push(`<button onclick="goPage(${p})" class="btn btn-sm" style="${p===page?'background:#2563eb;color:#fff;':'background:#f8fafc;color:#475569;border:1.5px solid #e2e8f0;'}">${p}</button>`);
+  if(page<totalPages) btns.push(`<button onclick="goPage(${page+1})" class="btn btn-secondary btn-sm">Next →</button>`);
+  document.getElementById('paginationBtns').innerHTML = btns.join('');
+  setTimeout(injectDeleteButtons, 50);
+}
+
+function goPage(p) { page=p; renderTickets(); window.scrollTo({top:0,behavior:'smooth'}); }
+
+function toggleRow(id, cb) {
+  if (cb.checked) selected.add(id); else selected.delete(id);
+  updateBulkBar();
+}
+function toggleSelectAll(cb) {
+  document.querySelectorAll('.row-check').forEach(el => {
+    const id = parseInt(el.value);
+    el.checked = cb.checked;
+    if(cb.checked) selected.add(id); else selected.delete(id);
+  });
+  updateBulkBar();
+}
+function updateBulkBar() {
+  const bar = document.getElementById('bulkBar');
+  const cnt = document.getElementById('bulkCount');
+  if (selected.size > 0) { bar.style.display='flex'; cnt.textContent=`${selected.size} ticket${selected.size!==1?'s':''} selected`; }
+  else bar.style.display='none';
+}
+function clearSelection() { selected.clear(); document.querySelectorAll('.row-check').forEach(el=>el.checked=false); document.getElementById('selectAll').checked=false; updateBulkBar(); }
+function bulkAction(status) {
+  const tickets = HDOS.getVisibleTickets();
+  tickets.forEach(t => {
+    if(selected.has(t.id)) {
+      t.status = status; t.updated = new Date().toISOString();
+      t.timeline = t.timeline||[];
+      t.timeline.push({ time:new Date().toISOString(), type:'status', actor:session.name, note:`Bulk action: Status set to ${status}.` });
+    }
+  });
+  HDOS.saveTickets(tickets);
+  HDOS.toast('Bulk update applied', `${selected.size} tickets updated to "${status}".`, 'success');
+  clearSelection(); renderStats(); renderTickets(); setTimeout(injectDeleteButtons, 100);
+}
+function bulkAssign(assignee) {
+  if(!assignee) return;
+  const tickets = HDOS.getVisibleTickets();
+  tickets.forEach(t => {
+    if(selected.has(t.id)) {
+      t.assignee = assignee; t.updated = new Date().toISOString();
+      t.timeline = t.timeline||[];
+      t.timeline.push({ time:new Date().toISOString(), type:'assigned', actor:session.name, note:`Bulk assigned to ${assignee}.` });
+    }
+  });
+  HDOS.saveTickets(tickets);
+  HDOS.toast('Bulk assign done', `${selected.size} tickets assigned to ${assignee}.`, 'success');
+  clearSelection(); renderStats(); renderTickets(); setTimeout(injectDeleteButtons, 100);
+  document.getElementById('bulkAssign').value='';
+}
+
+function openQuickEdit(id) {
+  const tickets = HDOS.getVisibleTickets();
+  const t = tickets.find(t=>t.id===id);
+  if(!t) return;
+  document.getElementById('qeId').value = id;
+  document.getElementById('qeTitle').textContent = `Quick Edit #${t.id}`;
+  document.getElementById('qeSub').textContent   = t.subject;
+  document.getElementById('qeNote').value = '';
+  const statuses = [['open','🔵 Open'],['in_progress','⏳ In Progress'],['under_review','🔍 Under Review'],['awaiting','⏸ Awaiting Reply'],['resolved','✓ Resolved'],['closed','✗ Closed']];
+  document.getElementById('qeStatus').innerHTML   = statuses.map(([v,l])=>`<option value="${v}" ${t.status===v?'selected':''}>${l}</option>`).join('');
+  document.getElementById('qePriority').innerHTML = ['low','normal','high','critical'].map(p=>`<option value="${p}" ${t.priority===p?'selected':''}>${p.charAt(0).toUpperCase()+p.slice(1)}</option>`).join('');
+  document.getElementById('qeAssignee').innerHTML = `<option value="Unassigned" ${t.assignee==='Unassigned'?'selected':''}>Unassigned</option>` + agents.map(a=>`<option value="${a.name}" ${t.assignee===a.name?'selected':''}>${a.name}</option>`).join('');
+  HDOS.openModal('quickEditModal');
+}
+
+function applyQuickEdit() {
+  const id       = parseInt(document.getElementById('qeId').value);
+  const status   = document.getElementById('qeStatus').value;
+  const priority = document.getElementById('qePriority').value;
+  const assignee = document.getElementById('qeAssignee').value;
+  const note     = document.getElementById('qeNote').value.trim();
+  const tickets  = HDOS.getVisibleTickets();
+  const t = tickets.find(t=>t.id===id);
+  if(!t) return;
+  const changes=[];
+  if(status!==t.status)       changes.push(`Status → ${status}`);
+  if(priority!==t.priority)   changes.push(`Priority → ${priority}`);
+  if(assignee!==t.assignee)   changes.push(`Assigned → ${assignee}`);
+  t.status=status; t.priority=priority; t.assignee=assignee;
+  t.updated=new Date().toISOString();
+  t.timeline=t.timeline||[];
+  if(changes.length) t.timeline.push({ time:new Date().toISOString(), type:'status', actor:session.name, note:changes.join('. ')+'.' });
+  if(note)           t.timeline.push({ time:new Date().toISOString(), type:'comment', actor:session.name+' (internal)', note });
+  HDOS.saveTickets(tickets);
+  HDOS.toast('Ticket updated', changes.join(' · ')||'No field changes, note added.', 'success');
+  HDOS.closeModal('quickEditModal');
+  renderStats(); renderTickets(); setTimeout(injectDeleteButtons, 100);
+}
+
+function exportTickets() {
+  const all = getFiltered();
+  const rows = [['ID','Subject','Category','Priority','Status','Assignee','Created','Updated']];
+  all.forEach(t=>rows.push([t.id,t.subject,t.category,t.priority,t.status,t.assignee||'',t.created,t.updated]));
+  const csv = rows.map(r=>r.map(c=>`"${c}"`).join(',')).join('\n');
+  const a=document.createElement('a'); a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download='helpdeskos-tickets.csv'; a.click();
+}
+
+renderStats(); renderTickets();
+
+// After render, inject delete buttons for users who have delete_tickets permission
+function injectDeleteButtons() {
+  if (!HDOS.hasAccess('delete_tickets')) return;
+  document.querySelectorAll('[id^="del-btn-"]').forEach(span => {
+    const tid = span.id.replace('del-btn-', '');
+    span.innerHTML = `<button data-tid="${tid}" onclick="deleteTicket(parseInt(this.dataset.tid))" style="width:28px;height:28px;border-radius:8px;border:1.5px solid #fecaca;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;margin-left:4px;" onmouseover="this.style.background='#fef2f2'" onmouseout="this.style.background='#fff'" title="Supprimer"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>`;
+  });
+}
+
+function deleteTicket(id) {
+  if (!confirm('Supprimer ce ticket définitivement ?')) return;
+  HDOS.saveTickets(HDOS.getTickets().filter(t => t.id !== id));
+  HDOS.toast('Ticket supprimé', null, 'success');
+  renderStats(); renderTickets(); setTimeout(injectDeleteButtons, 100);
+}
+</script>
+</body>
+</html>

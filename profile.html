@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>My Profile — HelpdeskOS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;1,9..40,400&display=swap" rel="stylesheet" />
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="css/styles.css" />
+</head>
+<body data-page="profile" data-root="./" data-title="My Profile" data-subtitle="Manage your account and preferences">
+
+<div class="main-wrap">
+  <header id="topbar"></header>
+  <main class="page-main" style="max-width:900px;">
+
+    <!-- Profile header card -->
+    <div style="background:linear-gradient(135deg,#1e3a8a,#2563eb,#3b82f6);border-radius:22px;padding:28px 28px 24px;position:relative;overflow:hidden;margin-bottom:20px;" class="anim-slide-up" id="profileHeader">
+      <div style="position:absolute;inset:0;background-image:radial-gradient(circle,rgba(255,255,255,0.07) 1px,transparent 1px);background-size:22px 22px;"></div>
+      <div style="position:relative;z-index:1;display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
+        <div id="profileAvatar" style="width:72px;height:72px;border-radius:50%;border:3px solid rgba(255,255,255,0.3);font-size:24px;flex-shrink:0;" class="avatar-placeholder"></div>
+        <div style="flex:1;">
+          <div id="profileName" style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:22px;color:#fff;"></div>
+          <div id="profileEmail" style="font-size:14px;color:rgba(255,255,255,0.75);margin-top:2px;"></div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;" id="profileBadges"></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;text-align:right;flex-shrink:0;">
+          <div id="profileStats" style="display:flex;gap:16px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tab-pills" style="margin-bottom:18px;width:fit-content;" id="profileTabs">
+      <button class="tab-pill active" onclick="showTab('info',this)">👤 Account Info</button>
+      <button class="tab-pill" onclick="showTab('security',this)">🔐 Security</button>
+      <button class="tab-pill" onclick="showTab('notifications',this)">🔔 Notifications</button>
+      <button class="tab-pill" onclick="showTab('activity',this)">📊 Activity</button>
+    </div>
+
+    <!-- Tab: Account Info -->
+    <div id="tab-info" class="card" style="padding:24px;">
+      <div style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:16px;color:#0f172a;margin-bottom:18px;">Personal Information</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;" id="profileForm">
+        <!-- filled by JS -->
+      </div>
+      <div style="margin-top:18px;padding-top:16px;border-top:1px solid #f1f5f9;display:flex;gap:10px;justify-content:flex-end;">
+        <button class="btn btn-ghost btn-sm" onclick="resetProfileForm()">Cancel</button>
+        <button class="btn btn-primary btn-sm" onclick="saveProfile()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+          Save Changes
+        </button>
+      </div>
+    </div>
+
+    <!-- Tab: Security -->
+    <div id="tab-security" class="card" style="padding:24px;display:none;">
+      <div style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:16px;color:#0f172a;margin-bottom:18px;">Security Settings</div>
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <!-- Change password -->
+        <div style="background:#f8fafc;border:1.5px solid #e8effd;border-radius:16px;padding:18px;">
+          <div style="font-weight:700;font-size:14px;color:#0f172a;margin-bottom:14px;">Change Password</div>
+          <div class="form-group"><label class="form-label">Current Password</label><input type="password" class="form-input" placeholder="••••••••" /></div>
+          <div class="form-group"><label class="form-label">New Password</label><input type="password" id="newPwd" class="form-input" placeholder="Min 12 characters" oninput="checkPwdStrength(this.value)" /></div>
+          <div id="pwdStrength" style="margin:-8px 0 12px;"></div>
+          <div class="form-group" style="margin-bottom:14px;"><label class="form-label">Confirm New Password</label><input type="password" class="form-input" placeholder="••••••••" /></div>
+          <button onclick="HDOS.toast('Password updated','Please use your new password on next login.','success')" class="btn btn-primary btn-sm">Update Password</button>
+        </div>
+        <!-- 2FA -->
+        <div style="background:#f8fafc;border:1.5px solid #e8effd;border-radius:16px;padding:18px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+            <div>
+              <div style="font-weight:700;font-size:14px;color:#0f172a;">Two-Factor Authentication</div>
+              <div style="font-size:13px;color:#64748b;margin-top:3px;">Protect your account with an extra layer of security via Okta Verify.</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span class="badge badge-green">✅ Enabled</span>
+              <button onclick="HDOS.toast('2FA Settings','Redirecting to Okta Verify management…','info')" class="btn btn-secondary btn-sm">Manage</button>
+            </div>
+          </div>
+        </div>
+        <!-- Sessions -->
+        <div style="background:#f8fafc;border:1.5px solid #e8effd;border-radius:16px;padding:18px;">
+          <div style="font-weight:700;font-size:14px;color:#0f172a;margin-bottom:12px;">Active Sessions</div>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            ${[
+              { device:'MacBook Pro 14"', os:'macOS 15 Sonoma', location:'New York, US', current:true, time:'Now' },
+              { device:'iPhone 15 Pro',   os:'iOS 18.2',        location:'New York, US', current:false, time:'2 hours ago' },
+              { device:'Chrome on Windows',os:'Windows 11',     location:'New York, US', current:false, time:'Yesterday' },
+            ].map(s => `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;background:${s.current?'#eff6ff':'#fff'};border:1px solid ${s.current?'#bfdbfe':'#f1f5f9'};border-radius:12px;flex-wrap:wrap;">
+              <div style="display:flex;align-items:center;gap:10px;">
+                <span style="font-size:20px;">${s.device.includes('iPhone')?'📱':'💻'}</span>
+                <div>
+                  <div style="font-size:13.5px;font-weight:600;color:#0f172a;">${s.device} ${s.current?'<span style="background:#2563eb;color:#fff;font-size:10px;padding:1px 6px;border-radius:99px;font-weight:700;margin-left:4px;">Current</span>':''}</div>
+                  <div style="font-size:12px;color:#64748b;">${s.os} · ${s.location} · ${s.time}</div>
+                </div>
+              </div>
+              ${!s.current?`<button onclick="HDOS.toast('Session revoked','The device has been signed out.','success')" style="font-size:12px;color:#dc2626;font-weight:600;border:none;background:none;cursor:pointer;">Revoke</button>`:''}
+            </div>`).join('')}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: Notifications -->
+    <div id="tab-notifications" class="card" style="padding:24px;display:none;">
+      <div style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:16px;color:#0f172a;margin-bottom:18px;">Notification Preferences</div>
+      <div style="display:flex;flex-direction:column;gap:14px;" id="notifSettings"></div>
+      <div style="margin-top:18px;text-align:right;">
+        <button onclick="HDOS.toast('Preferences saved','Your notification settings have been updated.','success')" class="btn btn-primary btn-sm">Save Preferences</button>
+      </div>
+    </div>
+
+    <!-- Tab: Activity -->
+    <div id="tab-activity" class="card" style="padding:24px;display:none;">
+      <div style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:16px;color:#0f172a;margin-bottom:18px;">My Activity</div>
+      <div id="activityList" style="display:flex;flex-direction:column;gap:10px;"></div>
+    </div>
+
+  </main>
+</div>
+
+<script src="js/app.js"></script>
+<script src="js/nav.js"></script>
+<script>
+const session = HDOS.requireAccess('profile');
+if (session) {
+  const initials = session.name.split(' ').map(n=>n[0]).join('').slice(0,2);
+  document.getElementById('profileAvatar').textContent = initials;
+  document.getElementById('profileName').textContent   = session.name;
+  document.getElementById('profileEmail').textContent  = session.email;
+
+  const roleColors = { admin:'#7c3aed', agent:'#0ea5e9', employee:'#10b981' };
+  const roleLabels = { admin:'Administrator', agent:'IT Agent', employee:'Employee' };
+  document.getElementById('profileBadges').innerHTML = `
+    <span style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);padding:4px 10px;border-radius:99px;font-size:12px;font-weight:600;color:#fff;">${roleLabels[session.role]||session.role}</span>
+    <span style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);padding:4px 10px;border-radius:99px;font-size:12px;font-weight:600;color:#fff;">${session.dept}</span>`;
+
+  const myTickets = HDOS.getVisibleTickets();
+  const openCount = myTickets.filter(t=>['open','in_progress','under_review','awaiting'].includes(t.status)).length;
+  document.getElementById('profileStats').innerHTML = [
+    { label:'Total Tickets', value: myTickets.length },
+    { label:'Open', value: openCount },
+    { label:'Resolved', value: myTickets.filter(t=>t.status==='resolved').length },
+  ].map(s => `<div style="text-align:center;">
+    <div style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:22px;color:#fff;">${s.value}</div>
+    <div style="font-size:11px;color:rgba(255,255,255,0.65);">${s.label}</div>
+  </div>`).join('');
+
+  // Profile form
+  document.getElementById('profileForm').innerHTML = [
+    { label:'Full Name',    id:'pf-name',    type:'text',  value: session.name },
+    { label:'Email',        id:'pf-email',   type:'email', value: session.email },
+    { label:'Department',   id:'pf-dept',    type:'text',  value: session.dept },
+    { label:'Phone',        id:'pf-phone',   type:'tel',   value: '' },
+    { label:'Location',     id:'pf-location',type:'text',  value: 'New York, NY', colspan:true },
+  ].map(f => `<div class="form-group" style="${f.colspan?'grid-column:1/-1':''};margin-bottom:0;">
+    <label class="form-label">${f.label}</label>
+    <input type="${f.type}" id="${f.id}" class="form-input" value="${f.value}" />
+  </div>`).join('');
+
+  // Notification settings
+  document.getElementById('notifSettings').innerHTML = [
+    { label:'Ticket status updates',       sub:'When your ticket changes status (In Progress, Resolved…)', checked:true },
+    { label:'New ticket replies',          sub:'When an agent adds a comment to your ticket', checked:true },
+    { label:'System status incidents',     sub:'When a service you use has an outage or degradation', checked:true },
+    { label:'Scheduled maintenance',       sub:'24h advance notice of planned maintenance windows', checked:false },
+    { label:'Weekly IT digest',            sub:'Weekly summary of IT tips, announcements, and KB articles', checked:false },
+    { label:'Chat transcript',             sub:'Email copy of live chat sessions', checked:true },
+  ].map((n,i) => `<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;background:#f8fafc;border:1.5px solid #e8effd;border-radius:14px;">
+    <div>
+      <div style="font-weight:600;font-size:13.5px;color:#0f172a;">${n.label}</div>
+      <div style="font-size:12px;color:#64748b;margin-top:1px;">${n.sub}</div>
+    </div>
+    <label style="position:relative;display:inline-block;width:44px;height:24px;flex-shrink:0;">
+      <input type="checkbox" ${n.checked?'checked':''} style="opacity:0;width:0;height:0;" onchange="toggleNotif(this)">
+      <span style="position:absolute;inset:0;background:${n.checked?'#2563eb':'#cbd5e1'};border-radius:12px;cursor:pointer;transition:background .2s;display:flex;align-items:center;">
+        <span style="width:18px;height:18px;background:#fff;border-radius:50%;margin:0 3px;transition:transform .2s;transform:${n.checked?'translateX(20px)':'translateX(0)'}"></span>
+      </span>
+    </label>
+  </div>`).join('');
+
+  // Activity
+  const recentActivity = [
+    ...myTickets.slice(0,5).map(t => ({ type:'ticket', icon:'🎫', text:`Submitted ticket #${t.id}: "${t.subject}"`, time:t.created, link:`ticket-detail.html?id=${t.id}` })),
+    { type:'kb', icon:'📖', text:'Consulté le Chatbot IA', time: new Date(Date.now()-3600000).toISOString(), link:'chatbot.html' },
+    { type:'kb', icon:'📖', text:'Consulté le Chatbot IA', time: new Date(Date.now()-86400000).toISOString(), link:'chatbot.html' },
+    { type:'login', icon:'🔐', text:'Signed in from MacBook Pro · New York, US', time: new Date(Date.now()-7200000).toISOString() },
+  ].sort((a,b) => new Date(b.time) - new Date(a.time)).slice(0,10);
+
+  document.getElementById('activityList').innerHTML = recentActivity.map(a => `
+    <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:#f8fafc;border:1px solid #e8effd;border-radius:12px;">
+      <span style="font-size:18px;">${a.icon}</span>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13.5px;font-weight:500;color:#0f172a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${a.text}</div>
+        <div style="font-size:11.5px;color:#94a3b8;margin-top:1px;">${HDOS.timeAgo(a.time)}</div>
+      </div>
+      ${a.link ? `<a href="${a.link}" style="font-size:12px;color:#2563eb;font-weight:600;text-decoration:none;white-space:nowrap;">View →</a>` : ''}
+    </div>`).join('') || '<div style="text-align:center;padding:20px;color:#94a3b8;font-size:13px;">No activity yet.</div>';
+}
+
+function showTab(name, btn) {
+  ['info','security','notifications','activity'].forEach(id => {
+    document.getElementById('tab-'+id).style.display = id===name ? 'block' : 'none';
+  });
+  document.querySelectorAll('#profileTabs .tab-pill').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (name === 'security') {
+    // Re-render sessions (inline above)
+  }
+}
+function saveProfile()      { HDOS.toast('Profile updated','Your information has been saved.','success'); }
+function resetProfileForm() { HDOS.toast('Changes discarded',null,'info'); }
+function checkPwdStrength(val) {
+  const el = document.getElementById('pwdStrength');
+  if (!val) { el.innerHTML=''; return; }
+  const score = [val.length>=12, /[A-Z]/.test(val), /[0-9]/.test(val), /[^A-Za-z0-9]/.test(val)].filter(Boolean).length;
+  const [color, label] = score<=1?['#ef4444','Weak']:score===2?['#f59e0b','Fair']:score===3?['#60a5fa','Good']:['#10b981','Strong'];
+  el.innerHTML = `<div style="display:flex;align-items:center;gap:8px;margin-top:4px;"><div style="flex:1;height:4px;background:#f1f5f9;border-radius:2px;overflow:hidden;"><div style="height:100%;width:${score*25}%;background:${color};transition:width .3s;border-radius:2px;"></div></div><span style="font-size:11.5px;color:${color};font-weight:600;">${label}</span></div>`;
+}
+function toggleNotif(cb) {
+  const span = cb.nextElementSibling;
+  const dot  = span.querySelector('span');
+  if (cb.checked) { span.style.background='#2563eb'; dot.style.transform='translateX(20px)'; }
+  else            { span.style.background='#cbd5e1'; dot.style.transform='translateX(0)'; }
+}
+// Open settings anchor
+if (location.hash === '#settings') showTab('security', document.querySelectorAll('#profileTabs .tab-pill')[1]);
+</script>
+</body>
+</html>

@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Gestion Utilisateurs — HelpdeskOS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;1,9..40,400&display=swap" rel="stylesheet" />
+<script src="https://cdn.tailwindcss.com"></script>
+<style>@media(max-width:640px){.admin-form-grid{grid-template-columns:1fr!important;}.hide-xs{display:none!important;}}</style>
+<link rel="stylesheet" href="../css/styles.css" />
+<style>
+  .icon-btn { width:28px;height:28px;border-radius:8px;border:1.5px solid #e2e8f0;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .13s;flex-shrink:0; }
+  .icon-btn-blue:hover  { background:#eff6ff;border-color:#bfdbfe;color:#2563eb; }
+  .icon-btn-amber:hover { background:#fffbeb;border-color:#fde68a;color:#d97706; }
+  .icon-btn-green:hover { background:#ecfdf5;border-color:#a7f3d0;color:#059669; }
+  .icon-btn-red:hover   { background:#fef2f2;border-color:#fecaca;color:#dc2626; }
+  .access-item { display:flex;align-items:center;gap:9px;padding:9px 12px;border:1.5px solid #e8effd;border-radius:11px;cursor:pointer;transition:all .13s;background:#f8fafc; }
+  .access-item:has(input:checked), .access-item.checked { border-color:#bfdbfe;background:#eff6ff; }
+  .access-item:hover { border-color:#bfdbfe;background:#f0f7ff; }
+</style>
+</head>
+<body data-page="admin-users" data-root="../" data-title="Gestion des Utilisateurs" data-subtitle="Créez, modifiez et contrôlez les accès de chaque compte">
+
+<div class="main-wrap">
+  <header id="topbar"></header>
+  <main class="page-main">
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:18px;" id="userStats"></div>
+
+    <!-- Super Admin Password Card -->
+    <div id="superAdminSection" style="display:none;background:linear-gradient(135deg,#fffbeb,#fef3c7);border:2px solid #fde68a;border-radius:18px;padding:16px 20px;margin-bottom:18px;display:none;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="width:42px;height:42px;border-radius:13px;background:#fef3c7;border:2px solid #fde68a;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🔑</div>
+        <div>
+          <div style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:14px;color:#92400e;">Compte Super Administrateur</div>
+          <div style="font-size:12.5px;color:#b45309;">Identifiant : <code style="background:#fef3c7;padding:1px 6px;border-radius:4px;font-weight:700;">admin</code> — Mot de passe modifiable ici</div>
+        </div>
+      </div>
+      <button onclick="openSuperAdminPwd()" class="btn btn-sm" style="background:#f59e0b;color:#fff;border:none;flex-shrink:0;">
+        Changer le mot de passe
+      </button>
+    </div>
+
+    <!-- Filters -->
+    <div class="card" style="padding:14px 18px;margin-bottom:14px;">
+      <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;">
+        <div style="flex:1;min-width:180px;display:flex;align-items:center;gap:8px;background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:10px;padding:7px 12px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <input id="userSearch" placeholder="Nom ou email…" style="flex:1;border:none;background:transparent;font-family:'DM Sans',sans-serif;font-size:13px;outline:none;color:#0f172a;" oninput="renderUsers()" />
+        </div>
+        <select id="roleFilter" class="form-select" style="width:auto;padding:7px 28px 7px 10px;font-size:13px;border-radius:10px;" onchange="renderUsers()">
+          <option value="">Tous les rôles</option>
+          <option value="admin">Admin</option>
+          <option value="agent">Agent IT</option>
+          <option value="employee">Employé</option>
+        </select>
+        <select id="statusFilter" class="form-select" style="width:auto;padding:7px 28px 7px 10px;font-size:13px;border-radius:10px;" onchange="renderUsers()">
+          <option value="">Tous statuts</option>
+          <option value="active">Actif</option>
+          <option value="inactive">Inactif</option>
+        </select>
+        <button onclick="openCreateModal()" class="btn btn-primary btn-sm" style="margin-left:auto;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+          Créer un compte
+        </button>
+        <button onclick="exportCSV()" class="btn btn-ghost btn-sm">⬇ CSV</button>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="card" style="overflow:hidden;">
+      <div style="overflow-x:auto;">
+        </div><div style="overflow-x:auto;"><table class="data-table">
+          <thead><tr>
+            <th>Utilisateur</th>
+            <th>Email</th>
+            <th>Rôle</th>
+            <th class="hide-sm">Département</th>
+            <th>Statut</th>
+            <th class="hide-md">Accès</th>
+            <th class="hide-md">Connexion</th>
+            <th style="width:110px;">Actions</th>
+          </tr></thead>
+          <tbody id="userBody"></tbody>
+        </table>
+      </div>
+      <div style="padding:10px 20px;border-top:1px solid #f1f5f9;">
+        <span id="userCount" style="font-size:13px;color:#64748b;"></span>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ══════ CREATE/EDIT MODAL ══════ -->
+<div class="modal-overlay" id="userModal">
+  <div class="modal-box" style="padding:0;max-width:620px;max-height:92vh;overflow-y:auto;">
+    <div style="padding:20px 24px;border-bottom:1px solid #f1f5f9;display:flex;align-items:flex-start;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:5;">
+      <div>
+        <div id="modalTitle" style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:18px;color:#0f172a;"></div>
+        <div id="modalSub" style="font-size:12.5px;color:#64748b;margin-top:2px;"></div>
+      </div>
+      <button onclick="HDOS.closeModal('userModal')" style="width:32px;height:32px;border-radius:9px;border:1.5px solid #e2e8f0;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div style="padding:20px 24px;display:flex;flex-direction:column;gap:16px;">
+      <input type="hidden" id="editUserId" />
+
+      <!-- Identity section -->
+      <div class="admin-form-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="form-group" style="margin:0;"><label class="form-label">Nom complet <span style="color:#ef4444">*</span></label><input type="text" id="mName" class="form-input" placeholder="Prénom Nom" /></div>
+        <div class="form-group" style="margin:0;"><label class="form-label">Email <span style="color:#ef4444">*</span></label><input type="email" id="mEmail" class="form-input" placeholder="prenom@company.com" /></div>
+        <div class="form-group" style="margin:0;">
+          <label class="form-label">Mot de passe <span id="pwdStar" style="color:#ef4444">*</span></label>
+          <div style="position:relative;">
+            <input type="password" id="mPwd" class="form-input" placeholder="Mot de passe" style="padding-right:40px;" />
+            <button type="button" onclick="toggleMPwd()" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#94a3b8;display:flex;align-items:center;">
+              <svg id="mEye" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="form-group" style="margin:0;"><label class="form-label">Département</label><input type="text" id="mDept" class="form-input" placeholder="ex: Marketing" list="deptOpts" /><datalist id="deptOpts"><option>IT Department</option><option>Engineering</option><option>Marketing</option><option>Finance</option><option>Design</option><option>Sales</option><option>HR</option><option>Operations</option></datalist></div>
+        <div class="form-group" style="margin:0;">
+          <label class="form-label">Rôle</label>
+          <select id="mRole" class="form-select" onchange="applyRoleDefaults()">
+            <option value="employee">Employé</option>
+            <option value="agent">Agent IT</option>
+            <option value="admin">Administrateur</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label class="form-label">Statut</label>
+          <select id="mStatus" class="form-select"><option value="active">Actif</option><option value="inactive">Inactif</option></select>
+        </div>
+      </div>
+
+      <!-- Access categories -->
+      <div style="border:1.5px solid #e8effd;border-radius:14px;padding:16px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+          <div>
+            <div style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:14px;color:#0f172a;">Catégories d'accès</div>
+            <div style="font-size:12px;color:#64748b;margin-top:1px;">Sections auxquelles cet utilisateur aura accès</div>
+          </div>
+          <div style="display:flex;gap:6px;">
+            <button type="button" onclick="setAll(true)"  class="btn btn-ghost btn-sm" style="font-size:11px;">Tout</button>
+            <button type="button" onclick="setAll(false)" class="btn btn-ghost btn-sm" style="font-size:11px;color:#dc2626;">Aucun</button>
+          </div>
+        </div>
+        <div id="accessGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:7px;"></div>
+      </div>
+
+      <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:8px 12px;font-size:12px;color:#92400e;">
+        💡 Cliquer sur un rôle met à jour automatiquement les accès par défaut. Vous pouvez les personnaliser librement.
+      </div>
+    </div>
+    <div style="padding:14px 24px;border-top:1px solid #f1f5f9;display:flex;gap:10px;justify-content:flex-end;position:sticky;bottom:0;background:#fff;">
+      <button onclick="HDOS.closeModal('userModal')" class="btn btn-ghost">Annuler</button>
+      <button onclick="saveUser()" id="saveUserBtn" class="btn btn-primary">Créer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ SUPER ADMIN PWD MODAL ══════ -->
+<div class="modal-overlay" id="saPwdModal">
+  <div class="modal-box" style="padding:0;max-width:400px;">
+    <div style="padding:18px 22px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;justify-content:space-between;">
+      <div style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:16px;color:#0f172a;">🔑 Mot de passe Super Admin</div>
+      <button onclick="HDOS.closeModal('saPwdModal')" style="width:30px;height:30px;border-radius:8px;border:1.5px solid #e2e8f0;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div style="padding:18px 22px;display:flex;flex-direction:column;gap:12px;">
+      <div class="form-group" style="margin:0;"><label class="form-label">Mot de passe actuel</label><input type="password" id="saOld" class="form-input" placeholder="••••••••" /></div>
+      <div class="form-group" style="margin:0;">
+        <label class="form-label">Nouveau mot de passe</label>
+        <input type="password" id="saNew" class="form-input" placeholder="Nouveau mot de passe" oninput="checkStrength(this.value,'saStr')" />
+        <div id="saStr" style="margin-top:5px;"></div>
+      </div>
+      <div class="form-group" style="margin:0;"><label class="form-label">Confirmer</label><input type="password" id="saConf" class="form-input" placeholder="Confirmer" /></div>
+    </div>
+    <div style="padding:12px 22px;border-top:1px solid #f1f5f9;display:flex;gap:8px;justify-content:flex-end;">
+      <button onclick="HDOS.closeModal('saPwdModal')" class="btn btn-ghost btn-sm">Annuler</button>
+      <button onclick="saveSaPwd()" class="btn btn-primary btn-sm">Mettre à jour</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ CONFIRM DELETE ══════ -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal-box" style="padding:28px;max-width:360px;text-align:center;">
+    <div style="font-size:38px;margin-bottom:12px;">🗑️</div>
+    <div id="delTitle" style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:17px;color:#0f172a;margin-bottom:6px;"></div>
+    <div id="delSub"   style="font-size:13px;color:#64748b;margin-bottom:22px;line-height:1.5;"></div>
+    <div style="display:flex;gap:10px;justify-content:center;">
+      <button onclick="HDOS.closeModal('confirmModal')" class="btn btn-ghost">Annuler</button>
+      <button id="delBtn" class="btn btn-danger">Supprimer</button>
+    </div>
+  </div>
+</div>
+
+<script src="../js/app.js"></script>
+<script src="../js/nav.js"></script>
+<script>
+const session = HDOS.requireAdmin();
+let editingId = null;
+
+// Show super admin section
+if (session && session.role === 'superadmin') {
+  document.getElementById('superAdminSection').style.display = 'flex';
+}
+
+// ─── Stats ────────────────────────────────────
+function renderStats() {
+  const u = HDOS.getUsers();
+  document.getElementById('userStats').innerHTML = [
+    { l:'Total',     v:u.length,                                c:'#475569',bg:'#f8fafc',i:'👥'},
+    { l:'Actifs',    v:u.filter(x=>x.status==='active').length, c:'#059669',bg:'#ecfdf5',i:'✅'},
+    { l:'Agents IT', v:u.filter(x=>x.role==='agent').length,    c:'#0ea5e9',bg:'#f0f9ff',i:'🔧'},
+    { l:'Admins',    v:u.filter(x=>x.role==='admin').length,    c:'#7c3aed',bg:'#faf5ff',i:'🛡'},
+    { l:'Employés',  v:u.filter(x=>x.role==='employee').length, c:'#64748b',bg:'#f8fafc',i:'👤'},
+    { l:'Inactifs',  v:u.filter(x=>x.status==='inactive').length,c:'#94a3b8',bg:'#f1f5f9',i:'⏸'},
+  ].map(s=>`<div class="card" style="padding:12px 14px;"><div style="display:flex;align-items:center;gap:8px;"><div style="width:34px;height:34px;border-radius:10px;background:${s.bg};display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;">${s.i}</div><div><div style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:19px;color:${s.c};">${s.v}</div><div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;">${s.l}</div></div></div></div>`).join('');
+}
+
+// ─── Table ────────────────────────────────────
+function renderUsers() {
+  const q    = document.getElementById('userSearch').value.toLowerCase();
+  const role = document.getElementById('roleFilter').value;
+  const stat = document.getElementById('statusFilter').value;
+  let users  = HDOS.getUsers();
+  if (q)    users = users.filter(u => u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q));
+  if (role) users = users.filter(u => u.role === role);
+  if (stat) users = users.filter(u => u.status === stat);
+
+  const rl = { admin:'badge-purple', agent:'badge-blue', employee:'badge-green' };
+  const rn = { admin:'Admin', agent:'Agent IT', employee:'Employé' };
+  const total = HDOS.ACCESS_MODULES.length;
+
+  document.getElementById('userCount').textContent = `${users.length} compte${users.length!==1?'s':''}`;
+  document.getElementById('userBody').innerHTML = users.length ? users.map(u => {
+    const cnt = Array.isArray(u.access) ? u.access.length : 0;
+    const pct = Math.round(cnt/total*100);
+    const barColor = pct>70?'#10b981':pct>40?'#f59e0b':'#ef4444';
+    return `<tr>
+      <td>
+        <div style="display:flex;align-items:center;gap:9px;">
+          <div class="avatar-placeholder" style="width:34px;height:34px;font-size:12px;flex-shrink:0;">${u.avatar}</div>
+          <div>
+            <div style="font-weight:600;font-size:13.5px;color:#0f172a;">${u.name}</div>
+            <div style="font-size:11px;color:#94a3b8;">depuis ${HDOS.formatDate(u.created)}</div>
+          </div>
+        </div>
+      </td>
+      <td style="font-size:13px;color:#475569;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${u.email}</td>
+      <td><span class="badge ${rl[u.role]||'badge-slate'}">${rn[u.role]||u.role}</span></td>
+      <td class="hide-sm" style="font-size:13px;color:#475569;">${u.dept||'—'}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span style="width:7px;height:7px;border-radius:50%;background:${u.status==='active'?'#10b981':'#94a3b8'};flex-shrink:0;"></span>
+          <span style="font-size:13px;font-weight:600;color:${u.status==='active'?'#059669':'#94a3b8'};">${u.status==='active'?'Actif':'Inactif'}</span>
+        </div>
+      </td>
+      <td class="hide-md">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="flex:1;height:5px;background:#f1f5f9;border-radius:99px;overflow:hidden;min-width:50px;"><div style="height:100%;width:${pct}%;background:${barColor};border-radius:99px;"></div></div>
+          <span style="font-size:11.5px;color:#64748b;">${cnt}/${total}</span>
+        </div>
+      </td>
+      <td class="hide-md" style="font-size:12px;color:#94a3b8;">${u.lastLogin?HDOS.timeAgo(u.lastLogin):'Jamais'}</td>
+      <td>
+        <div style="display:flex;gap:5px;">
+          <button class="icon-btn icon-btn-blue" onclick='openEdit(${JSON.stringify(u)})' title="Modifier"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+          <button class="icon-btn ${u.status==='active'?'icon-btn-amber':'icon-btn-green'}" onclick="toggleStatus('${u.id}','${u.status}')" title="${u.status==='active'?'Désactiver':'Activer'}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">${u.status==='active'?'<path d="M18.36 6.64a9 9 0 11-12.73 0M12 2v10"/>':'<path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M9 12l2 2 4-4"/>'}</svg></button>
+          <button class="icon-btn icon-btn-red" onclick="doDelete(this)" data-id="${u.id}" data-name="${u.name}" title="Supprimer"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6M10 11v6M14 11v6M9 6V4h6v2"/></svg></button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('') : '<tr><td colspan="8" style="text-align:center;padding:36px;color:#94a3b8;">Aucun utilisateur.</td></tr>';
+}
+
+// ─── Access grid ──────────────────────────────
+function buildAccessGrid(selected) {
+  document.getElementById('accessGrid').innerHTML = HDOS.ACCESS_MODULES.map(m => {
+    const checked = selected.includes(m.id);
+    return `<label class="access-item${checked?' checked':''}" id="al_${m.id}">
+      <input type="checkbox" name="access" value="${m.id}" ${checked?'checked':''} style="accent-color:#2563eb;width:15px;height:15px;flex-shrink:0;" onchange="document.getElementById('al_${m.id}').classList.toggle('checked',this.checked)" />
+      <span style="font-size:16px;">${m.icon}</span>
+      <span style="font-size:13px;font-weight:500;color:#0f172a;">${m.label}</span>
+    </label>`;
+  }).join('');
+}
+
+function getAccess() { return Array.from(document.querySelectorAll('input[name="access"]:checked')).map(e=>e.value); }
+
+function setAll(v) {
+  document.querySelectorAll('input[name="access"]').forEach(e => {
+    e.checked = v;
+    document.getElementById('al_'+e.value)?.classList.toggle('checked', v);
+  });
+}
+
+function applyRoleDefaults() {
+  buildAccessGrid(HDOS.defaultAccess(document.getElementById('mRole').value));
+}
+
+// ─── Open modals ──────────────────────────────
+function openCreateModal() {
+  editingId = null;
+  document.getElementById('modalTitle').textContent = 'Créer un nouveau compte';
+  document.getElementById('modalSub').textContent   = 'Définissez les informations et les droits d\'accès.';
+  document.getElementById('saveUserBtn').textContent = 'Créer le compte';
+  document.getElementById('pwdStar').style.display = 'inline';
+  ['mName','mEmail','mPwd','mDept'].forEach(id => { document.getElementById(id).value=''; });
+  document.getElementById('mRole').value   = 'employee';
+  document.getElementById('mStatus').value = 'active';
+  buildAccessGrid(HDOS.defaultAccess('employee'));
+  HDOS.openModal('userModal');
+}
+
+function openEdit(user) {
+  editingId = user.id;
+  document.getElementById('modalTitle').textContent = 'Modifier le compte';
+  document.getElementById('modalSub').textContent   = `Modification de ${user.name}`;
+  document.getElementById('saveUserBtn').textContent = 'Enregistrer';
+  document.getElementById('pwdStar').style.display = 'none';
+  document.getElementById('mName').value   = user.name;
+  document.getElementById('mEmail').value  = user.email;
+  document.getElementById('mPwd').value    = '';
+  document.getElementById('mDept').value   = user.dept||'';
+  document.getElementById('mRole').value   = user.role;
+  document.getElementById('mStatus').value = user.status;
+  buildAccessGrid(user.access || HDOS.defaultAccess(user.role));
+  HDOS.openModal('userModal');
+}
+
+function saveUser() {
+  const name   = document.getElementById('mName').value.trim();
+  const email  = document.getElementById('mEmail').value.trim();
+  const pwd    = document.getElementById('mPwd').value;
+  const role   = document.getElementById('mRole').value;
+  const dept   = document.getElementById('mDept').value.trim();
+  const status = document.getElementById('mStatus').value;
+  const access = getAccess();
+  if (!name)              { HDOS.toast('Nom requis',null,'error'); return; }
+  if (!email)             { HDOS.toast('Email requis',null,'error'); return; }
+  if (!editingId && !pwd) { HDOS.toast('Mot de passe requis',null,'error'); return; }
+  if (!access.length)     { HDOS.toast('Sélectionnez au moins un accès',null,'error'); return; }
+  if (editingId) {
+    const data = { name, email, role, dept, status, access };
+    if (pwd) data.password = pwd;
+    const res = HDOS.updateUser(editingId, data);
+    if (!res.ok) { HDOS.toast('Erreur', res.error, 'error'); return; }
+    HDOS.toast('Compte mis à jour', `${name} a été modifié.`, 'success');
+  } else {
+    const res = HDOS.createUser({ name, email, password: pwd, role, dept, status, access });
+    if (!res.ok) { HDOS.toast('Erreur', res.error, 'error'); return; }
+    HDOS.toast('Compte créé ! 🎉', `${name} peut maintenant se connecter.`, 'success');
+  }
+  HDOS.closeModal('userModal');
+  renderStats(); renderUsers();
+}
+
+// ─── Toggle status ────────────────────────────
+function toggleStatus(id, cur) {
+  const users = HDOS.getUsers();
+  const u = users.find(x=>x.id===id);
+  if (!u) return;
+  u.status = cur==='active'?'inactive':'active';
+  HDOS.saveUsers(users);
+  HDOS.toast(u.status==='active'?'Compte activé':'Compte désactivé', u.name, u.status==='active'?'success':'info');
+  renderStats(); renderUsers();
+}
+
+// ─── Delete ───────────────────────────────────
+function doDelete(btn) {
+  const id   = btn.getAttribute('data-id');
+  const name = btn.getAttribute('data-name');
+  confirmDelete(id, name);
+}
+
+function confirmDelete(id, name) {
+  document.getElementById('delTitle').textContent = `Supprimer ${name} ?`;
+  document.getElementById('delSub').textContent   = 'Cette action est irréversible. Les tickets liés seront conservés.';
+  document.getElementById('delBtn').onclick = () => {
+    HDOS.deleteUser(id);
+    HDOS.toast('Compte supprimé', `${name} a été supprimé.`, 'success');
+    HDOS.closeModal('confirmModal');
+    renderStats(); renderUsers();
+  };
+  HDOS.openModal('confirmModal');
+}
+
+// ─── Super admin password ─────────────────────
+function openSuperAdminPwd() {
+  ['saOld','saNew','saConf'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('saStr').innerHTML='';
+  HDOS.openModal('saPwdModal');
+}
+function saveSaPwd() {
+  const old  = document.getElementById('saOld').value;
+  const nw   = document.getElementById('saNew').value;
+  const conf = document.getElementById('saConf').value;
+  if (old !== HDOS.getSuperAdminPassword()) { HDOS.toast('Mot de passe actuel incorrect',null,'error'); return; }
+  if (!nw || nw.length < 4)                 { HDOS.toast('Minimum 4 caractères',null,'error'); return; }
+  if (nw !== conf)                           { HDOS.toast('Les mots de passe ne correspondent pas',null,'error'); return; }
+  HDOS.setSuperAdminPassword(nw);
+  HDOS.toast('Mot de passe Super Admin mis à jour','Nouveau mot de passe actif immédiatement.','success');
+  HDOS.closeModal('saPwdModal');
+}
+function checkStrength(val, elId) {
+  const el = document.getElementById(elId);
+  if (!val) { el.innerHTML=''; return; }
+  const s = [val.length>=6,val.length>=10,/[A-Z]/.test(val),/[0-9]/.test(val),/[^A-Za-z0-9]/.test(val)].filter(Boolean).length;
+  const [c,l] = s<=1?['#ef4444','Faible']:s<=2?['#f59e0b','Moyen']:s<=3?['#60a5fa','Bien']:['#10b981','Fort'];
+  el.innerHTML=`<div style="display:flex;align-items:center;gap:8px;"><div style="flex:1;height:4px;background:#f1f5f9;border-radius:2px;overflow:hidden;"><div style="height:100%;width:${s*20}%;background:${c};border-radius:2px;transition:width .3s;"></div></div><span style="font-size:11px;color:${c};font-weight:600;">${l}</span></div>`;
+}
+function toggleMPwd() {
+  const i=document.getElementById('mPwd'),icon=document.getElementById('mEye');
+  if(i.type==='password'){i.type='text';icon.innerHTML='<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><path d="M1 1l22 22"/>';}
+  else{i.type='password';icon.innerHTML='<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';}
+}
+
+// ─── CSV ──────────────────────────────────────
+function exportCSV() {
+  const users = HDOS.getUsers();
+  const rows = [['ID','Nom','Email','Rôle','Département','Statut','Accès','Créé']];
+  users.forEach(u => rows.push([u.id,u.name,u.email,u.role,u.dept||'',u.status,(u.access||[]).join(';'),u.created]));
+  const csv = rows.map(r=>r.map(c=>`"${c}"`).join(',')).join('\n');
+  const a = document.createElement('a'); a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv); a.download='users.csv'; a.click();
+}
+
+renderStats(); renderUsers();
+</script>
+</body>
+</html>
